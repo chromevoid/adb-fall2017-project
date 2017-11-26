@@ -11,10 +11,10 @@ import java.io.IOException;
 public class Application {
     public static void main(String[] args) {
         for(int i = 0; i < args.length; i++) {
-            TranscationManager tm = new TranscationManager();
+            TransactionManager tm = new TransactionManager();
             String FileName = args[i];
-            String transcationInput = readFile(FileName);
-            tm.runTest(transcationInput);
+            String transactionInput = readFile(FileName);
+            tm.runTest(transactionInput);
         }
     }
     public static String readFile(String fileName){
