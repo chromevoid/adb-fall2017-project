@@ -1,0 +1,74 @@
+function cycleDetection(waitList) {
+	// if a cycle exits
+	// return a list of transaction in the cycle
+	// if no cycle exits
+	// return an empty list
+}
+
+function abort(T) {
+	release T's locks;
+	delete T from waitList;
+	delete T from transactionAge;
+}
+
+function begin(T) {
+	
+}
+
+function beginRO(T) {
+	
+}
+
+function R(T, x) {
+	
+}
+
+funtion W(T, x, v) {
+	
+}
+
+function dump() {
+	
+}
+
+function dump(i) {
+	
+}
+
+function dump(x) {
+	
+}
+
+function end(T) {
+	// only commit to available sites
+	for (each x in writeVariables) {
+		index = the index of the x.name; // e.g. x2, the index is 2;
+		array sites[];
+		if (index is odd) {
+			sites[0] = (index + 1) mod 10;
+		}
+		else if (index is even) {
+			sites[10] = {1, 2, ..., 10};
+		}
+		for (each site in sites[]) {
+			if (site.available) {
+				site[x.name] = x.value;
+			}
+		}
+	}
+	// release T's locks
+	for (each element in locks[]) {
+		x.readLock = False;
+		x.writeLock = False;
+	}
+	delete T from waitList;
+	delete T from transactionAge;
+}
+
+function fail(site) {
+	
+}
+
+function recover(site) {
+	
+}
