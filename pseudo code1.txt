@@ -190,7 +190,7 @@ function end(T) {
 function fail(site) {
   Site s = siteMap[site];
   s.available = false;
-  for (each x in variables) {
+  for (each x in s.variables) {
     x.values[siteNumber][1] = false; // set canRead to false
   }
 }
