@@ -199,6 +199,8 @@ function recover(site) {
   Site s = siteMap[site];
   s.available = true;
   for (each x in variables) {
-    x.values[siteNumber][1] = false; // set canRead to false
+    if (x is odd number) {
+      canRead = true;
+    }
   }
 }
