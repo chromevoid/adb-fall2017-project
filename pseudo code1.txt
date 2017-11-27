@@ -26,6 +26,7 @@ function R(T, x) {
       push T into waitListAppend;
     }
     else if (lock succeed) {
+      x.readLock = x.readLock + 1;
       push lock into Transaction.locks;
     }
   }
@@ -36,15 +37,17 @@ funtion W(T, x, v) {
 }
 
 function dump() {
-  
+  print database;
 }
 
 function dump(i) {
-  
+  use siteMap to get the variable s;
+  s.print();
 }
 
 function dump(x) {
-  
+  use variableMap to get the variable x;
+  x.print();
 }
 
 function end(T) {
@@ -66,7 +69,7 @@ function end(T) {
   }
   // release T's locks
   for (each element in locks[]) {
-    x.readLock = False;
+    x.readLock = x.readLock - 1;
     x.writeLock = False;
   }
   delete T from waitList;

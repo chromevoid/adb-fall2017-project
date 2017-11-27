@@ -1,32 +1,51 @@
 class Variable {
   member:
-    array x[];
-    bool canRead = True;
-    bool readLock = False;
+    int variableNumber
+    hashmap values[siteNumber, pair(value, canRead)];
+    int readLock = 0;
     bool writeLock = False;
 
-  function init(index) {
-    value = 10 * index;
-    if (index is odd) {
-      the size of x[] is one;
-      use value to init x[];
+  function init(n) {
+    variableNumber = n;
+    value = 10 * n;
+    if (n is odd) {
+      siteNumber = (n + 1) mod 10;
+      values[siteNumber] = (value, True);
     }
-    else if (index is even) {
-      the size of x[] is ten;
-      use value to init x[];
+    else if (n is even) {
+      for (int i = 1; i <= 10; i++) {
+        values[i] = (value, True);
+      }
+    }
+  }
+  
+  function print() {
+    for (each element in hashmap) {
+      print ("x" + variableNumber + "." + element[0] + 
+             "=" + elememt[1][0]); // element[1][0] is the value
     }
   }
 }
 
 class Site {
   member:
+    int siteNumber;
     array variables[];
     bool available = True;
 
-  function init(v[]) {
+  function init(n, v[]) {
+    siteNumber = n;
     variables[] = v[];
     // e.g.
-    // s2[] = [x1[0], x11[0], x2[1], x4[1], x6[1], x8[1], x10[1]];
+    // s2[] = [x1, x11, x2, x4, x6, x8, x10];
+  }
+  
+  function print() {
+    for (each x in variables[]) {
+      print ("x" + x.variableNumber + "." + siteNumber +
+             " = " + x.values[siteNumber][0]);
+      // values[siteNumber] is a pair (value, canRead)
+    }
   }
 }
 
@@ -37,7 +56,14 @@ class Database {
   function init(s[]) {
     sites[] = s;
     // e.g.
-    // sites[] = [s1[], s2[], .. , s10[]];
+    // sites[] = [s1, s2, .. , s10;
+  }
+  
+  function print() {
+    for (each site in sites) {
+      print ("site" + site.siteNumber + ": ");
+      site.print();
+    }
   }
 }
 
@@ -47,9 +73,11 @@ class Transaction {
     array writeVariables[name][value];
 }
 
-function runTest(file) {
+function runTest(file) {    
   create variables x1~x20;
+  create variableMap = { 'x1': x1, 'x2': x2, ... };
   create site s1~s10;
+  create siteMap = { 's1': s1, 's2': s2, ... }
   create database;
   create array multiVersion[version number][variable number];
   create array waitList[transaction number];
@@ -76,6 +104,10 @@ function runTest(file) {
       }
     }
     // execute accumulate input commands
+    // be careful with read locks
+    // if the order is T1 and T2
+    // and T1 wants a write lock on x, T2 wants a read lock on x
+    // then we can't skip T1
     for (each command in the waitList) {
       execute corresponding function;
       if (execute success) {
