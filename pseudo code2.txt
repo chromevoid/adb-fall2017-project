@@ -70,7 +70,37 @@ class Database {
 class Transaction {
   member:
     array locks[];
-    array writeVariables[name][value];
+    hashmap writeVariables[name, value];
+    int versionNumber = -1; // for read-only transaction, -1 by default
+  
+  function init(isReadOnly) {
+    if (isReadOnly) {
+      versionNumber = latestVersionNumber;
+    }
+  }
+}
+
+class Lock {
+  member:
+    string variable;
+    string type;
+  
+  function init(v, t) {
+    variable = v;
+    type = t;
+  }
+}
+
+class Version {
+  member:
+    int versionNumber;
+    hashmap variables[];
+    array involvedTransaction[];
+  
+  function init(n, v[]) {
+    versionNumber = n;
+    variables[] = v[];
+  }
 }
 
 function runTest(file) {    
@@ -79,7 +109,9 @@ function runTest(file) {
   create site s1~s10;
   create siteMap = { 's1': s1, 's2': s2, ... }
   create database;
-  create array multiVersion[version number][variable number];
+  create multiVersion[versionNumber, version];
+  create int latestVersionNumber;
+  create hashmap transactionMap[transactionNumber, transaction];
   create array waitList[transaction number];
   create array transactionAge[transaction number];
 

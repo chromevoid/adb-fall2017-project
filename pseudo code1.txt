@@ -12,32 +12,117 @@ function abort(T) {
 }
 
 function begin(T) {
-  
+  number = toInt(T.substring(1));
+  Transaction T = new Transaction(false);
+  transactionMap[number] = T;
 }
 
 function beginRO(T) {
-  
+  if (multiVersion[latesetVersionNumber].variables has null value) {
+    waitListAppend.push("beginRO(T)");
+    return;
+  }
+  number = toInt(T.substring(1));
+  Transaction T = new Transaction(true);
+  transactionMap[number] = T;
+  multiVersion[latesetVersionNumber].involvedTransaction.push(T);
 }
 
 function R(T, x) {
+  if (T.versionNumber == -1) {
+    // if T is a read-only transaction
+    // then T doesn't needs locks
+    Version versionT = multiVersion[T.versionNumber];
+    print(T reads x: version.variables[x]);
+    return;
+  }
   if (T is not a read-only transaction) {
     // acquire read lock on x
     bool getLock = false;
+    // if a transaction older than T
+    // requires a write lock on x in the waitList
+    // then T can't get read lock on x
     for (each transaction in waitList) {
-      
+      if (transaction needs a write lock on x) {
+        getLock = false;
+        break;
+      }
+    }
+    // if x is write locked
+    // then T can't get read lock on x
+    if (x.writeLock) {
+      getLock = false;
     }
     if (!getLock) {
       push T into waitListAppend;
     }
     else if (getLock) {
-      x.readLock = x.readLock + 1;
-      push lock into Transaction.locks;
+      if (x.variableNumber is odd) {
+        siteNumber = (x.variableNumber + 1) mod 10;
+        if (x.values[siteNumber][1]) {
+          print(T reads x: x.values[siteNumber][0]);
+          Lock lock = new Lock(x, "read");
+          x.readLock++;
+          push lock into Transaction.locks;
+          return;
+        }
+      }
+      if (x.variableNumber is even) {
+        for (int i = 1; i <= 10; i++) {
+          if (x.values[i][1]) {
+            print(T reads x: x.values[i][0]);
+            Lock lock = new Lock(x, "read");
+            x.readLock++;
+            push lock into Transaction.locks;
+            return;
+          }
+        }
+      }
+      print("all sites contains x are failed");
     }
+    return;
   }
 }
 
 funtion W(T, x, v) {
-  
+  bool getLock = false;
+  for (each transaction in waitList) {
+    if (transaction needs a read lock or write lock on x) {
+      getLock = false;
+      break;
+    }
+  }
+  if (x.writeLock || x.readLock != 0) {
+    getLock = false;
+  }
+  if (!getLock) {
+    push T into waitListAppend;
+  }
+  else if (get Lock) {
+    if (x.variableNumber is odd) {
+      siteNumber = (x.variableNumber + 1) mod 10;
+      if (x.values[siteNumber][1]) {
+        T.writeVariables[x.name]= v;
+        Lock lock = new Lock(x, "write");
+        x.writeLock = true;
+        push lock into Transaction.locks;
+        return;
+      }
+    }
+    if (x.variableNumber is even) {
+      for (int i = 1; i <= 10; i++) {
+        if (x.values[i][1]) {
+          T.writeVariables[x.name]= v;
+          Lock lock = new Lock(x, "write");
+          x.writeLock = true;
+          push lock into Transaction.locks;
+          return;
+        }
+      }
+    }
+    print("all sites contains x are failed");
+  }
+  return;
 }
 
 function dump() {
@@ -54,36 +139,66 @@ function dump(x) {
   x.print();
 }
 
+function cleanVersion(multiVersion) {
+  array removeList;
+  for (each v in multiVersion) {
+    // v[0] is versionNumber, v[1] is version
+    if (v[1].involvedTransaction.size == 0) {
+      removeList.append(v[0]);
+    }
+  }
+  for (each number in removeList) {
+    remove multiVersion[number];
+  }
+}
+
 function end(T) {
+  // if T is a read-only transaction
+  if (T.versionNumber != -1) {
+    multiVersion[T.versionNumber].involvedtransactions.pop(T);
+    cleanVersion(multiVersion);
+    return;
+  }
   // only commit to available sites
-  for (each x in writeVariables) {
-    index = the index of the x.name; // e.g. x2, the index is 2;
-    array sites[];
-    if (index is odd) {
-      sites[0] = (index + 1) mod 10;
-    }
-    else if (index is even) {
-      sites[10] = {1, 2, ..., 10};
-    }
-    for (each site in sites[]) {
-      if (site.available) {
-        site[x.name] = x.value;
+  for (each v in writeVariables) {
+    Varibale x = variableMap[v.name];
+    for (each element in x.values) {
+      if (siteMap["s" + toInt(element[0])].available) {
+        element[1][0] = v.value; // pair(value, canRead)
+        element[1][1] = true; // pair(value, canRead)
       }
     }
   }
+  // update version
+  latestVersionNumber++;
+  hashmap v[] = {"x1": x1, "x2": x2, ... , "x20": x20};
+  Version v = new Version(latestVersionNumber, v[]);
+  multiVersion[latestVersionNumber].push(v);
   // release T's locks
-  for (each element in locks[]) {
-    x.readLock = x.readLock - 1;
-    x.writeLock = False;
+  for (each lock in locks[]) {
+    if (lock.type == "read") {
+      x.readLock = x.readLock - 1;
+    }
+    if (lock.type == "write") {
+      x.writeLock = false;
+    }
   }
   delete T from waitList;
   delete T from transactionAge;
 }
 
 function fail(site) {
-  
+  Site s = siteMap[site];
+  s.available = false;
+  for (each x in variables) {
+    x.values[siteNumber][1] = false; // set canRead to false
+  }
 }
 
 function recover(site) {
-  
+  Site s = siteMap[site];
+  s.available = true;
+  for (each x in variables) {
+    x.values[siteNumber][1] = false; // set canRead to false
+  }
 }
