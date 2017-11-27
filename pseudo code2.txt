@@ -56,7 +56,7 @@ class Database {
   function init(s[]) {
     sites[] = s;
     // e.g.
-    // sites[] = [s1, s2, .. , s10;
+    // sites[] = [s1, s2, .. , s10];
   }
   
   function print() {
@@ -107,7 +107,7 @@ function runTest(file) {
     // be careful with read locks
     // if the order is T1 and T2
     // and T1 wants a write lock on x, T2 wants a read lock on x
-    // then we can't skip T1
+    // then we can't skip T1 and give T2 the read lock
     for (each command in the waitList) {
       execute corresponding function;
       if (execute success) {

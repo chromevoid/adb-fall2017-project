@@ -21,11 +21,15 @@ function beginRO(T) {
 
 function R(T, x) {
   if (T is not a read-only transaction) {
-    acquire read lock on x;
-    if (lock fail) {
+    // acquire read lock on x
+    bool getLock = false;
+    for (each transaction in waitList) {
+      
+    }
+    if (!getLock) {
       push T into waitListAppend;
     }
-    else if (lock succeed) {
+    else if (getLock) {
       x.readLock = x.readLock + 1;
       push lock into Transaction.locks;
     }
