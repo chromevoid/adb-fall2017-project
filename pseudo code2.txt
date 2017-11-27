@@ -1,73 +1,92 @@
 class Variable {
-	member:
-		array x[];
-		bool canRead = True;
-		bool readLock = False;
-		bool writeLock = False;
+  member:
+    array x[];
+    bool canRead = True;
+    bool readLock = False;
+    bool writeLock = False;
 
-	function init(index) {
-		value = 10 * index;
-		if (index is odd) {
-			the size of x[] is one;
-			use value to init x[];
-		}
-		else if (index is even) {
-			the size of x[] is ten;
-			use value to init x[];
-		}
-	}
+  function init(index) {
+    value = 10 * index;
+    if (index is odd) {
+      the size of x[] is one;
+      use value to init x[];
+    }
+    else if (index is even) {
+      the size of x[] is ten;
+      use value to init x[];
+    }
+  }
 }
 
 class Site {
-	member:
-		array variables[];
-		bool available = True;
+  member:
+    array variables[];
+    bool available = True;
 
-	function init(v[]) {
-		variables[] = v[];
-		// e.g.
-		// s2[] = [x1[0], x11[0], x2[1], x4[1], x6[1], x8[1], x10[1]];
-	}
+  function init(v[]) {
+    variables[] = v[];
+    // e.g.
+    // s2[] = [x1[0], x11[0], x2[1], x4[1], x6[1], x8[1], x10[1]];
+  }
 }
 
 class Database {
-	member:
-		site
+  member:
+    array sites[];
+  
+  function init(s[]) {
+    sites[] = s;
+    // e.g.
+    // sites[] = [s1[], s2[], .. , s10[]];
+  }
 }
 
 class Transaction {
-	member:
-		array locks[];
-		array writeVariables[name][value];
+  member:
+    array locks[];
+    array writeVariables[name][value];
 }
 
 function runTest(file) {
-	create variables x1~x20;
-	create site s1~s10;
-	create database
-	create array multiVersion[version number][variable number];
-	create array waitList[transaction number];
-	create array transactionAge[transaction number];
+  create variables x1~x20;
+  create site s1~s10;
+  create database;
+  create array multiVersion[version number][variable number];
+  create array waitList[transaction number];
+  create array transactionAge[transaction number];
 
-	for (each new line in the file) {
-		if (waitList.size > 1) {
-			list result = cycleDetection(waitList);
-			if (result) {
-				use transactionAge table to find the youngest transaction T in the result;
-				abort(T);
-			}
-
-		}
-		for (each command in the line) {
-			execute corresponding function;
-		}
-		for (each command in the waitList) {
-			execute corresponding function;
-		}
-
-	}
+  for (each newline in the file) {
+    // cycle detection
+    if (waitList.size > 1) {
+      list result = cycleDetection(waitList);
+      // if find a cycle
+      // then abort the youngest transaction
+      if (result) {
+        use transactionAge table to find
+          the youngest transaction T in the result;
+        abort(T);
+      }
+    }
+    create array waitListAppend[transaction number];
+    // execute input commands
+    for (each command in the line) {
+      execute corresponding function;
+      if (execute fail) {
+        waitListAppend.push(command);
+      }
+    }
+    // execute accumulate input commands
+    for (each command in the waitList) {
+      execute corresponding function;
+      if (execute success) {
+        delete command from waitList;
+      }
+    }
+    waitList.append(waitListAppend);
+  }
+  return;
 }
 
 main {
-	runTest(file);
+  runTest(file);
 }
