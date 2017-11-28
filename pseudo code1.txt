@@ -193,6 +193,9 @@ function fail(site) {
   for (each x in s.variables) {
     x.values[siteNumber][1] = false; // set canRead to false
   }
+  if (a transaction touched the failed site before) {
+    abort(transaction);
+  }
 }
 
 function recover(site) {
