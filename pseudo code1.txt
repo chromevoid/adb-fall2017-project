@@ -15,6 +15,7 @@ function begin(T) {
   number = toInt(T.substring(1));
   Transaction T = new Transaction(false);
   transactionMap[number] = T;
+  transactionAge.push(number);
 }
 
 function beginRO(T) {
@@ -190,11 +191,10 @@ function end(T) {
 function fail(site) {
   Site s = siteMap[site];
   s.available = false;
-  for (each x in s.variables) {
+  for (each x in variables) {
     x.values[siteNumber][1] = false; // set canRead to false
-  }
-  if (a transaction touched the failed site before) {
-    abort(transaction);
+    x.readLock = 0;
+    x.writeLock = false;
   }
 }
 

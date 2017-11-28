@@ -1,20 +1,32 @@
+class VariableInfo {
+  member:
+    int value;
+    boolean canRead = false;
+    int readLock = 0;
+    boolean writeLock = false;  
+  
+  function init(v) {
+    value = v;
+  }
+}
+
 class Variable {
   member:
     int variableNumber
-    hashmap values[siteNumber, pair(value, canRead)];
-    int readLock = 0;
-    bool writeLock = False;
+    hashmap values[siteNumber, VariableInfo];
 
   function init(n) {
     variableNumber = n;
     value = 10 * n;
     if (n is odd) {
-      siteNumber = (n + 1) mod 10;
-      values[siteNumber] = (value, True);
+      int siteNumber = (n + 1) mod 10;
+      VariableInfo vi = new VariableInfo(value);
+      values[siteNumber] = vi;
     }
     else if (n is even) {
       for (int i = 1; i <= 10; i++) {
-        values[i] = (value, True);
+        VariableInfo vi = new VariableInfo(value);
+        values[i] = vi;
       }
     }
   }
