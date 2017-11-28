@@ -1,7 +1,7 @@
 class VariableInfo {
   member:
     int value;
-    boolean canRead = false;
+    boolean canRead = true;
     int readLock = 0;
     boolean writeLock = false;  
   
@@ -68,7 +68,7 @@ class Database {
   function init(s[]) {
     sites[] = s;
     // e.g.
-    // sites[] = [s1, s2, .. , s10];
+    // sites[] = [1, 2, .. , 10];
   }
   
   function print() {
@@ -79,23 +79,11 @@ class Database {
   }
 }
 
-class Transaction {
-  member:
-    array locks[];
-    hashmap writeVariables[name, value];
-    int versionNumber = -1; // for read-only transaction, -1 by default
-  
-  function init(isReadOnly) {
-    if (isReadOnly) {
-      versionNumber = latestVersionNumber;
-    }
-  }
-}
-
 class Lock {
   member:
     string variable;
-    string type;
+    int siteNumber
+    string type; // write or read
   
   function init(v, t) {
     variable = v;
@@ -115,16 +103,30 @@ class Version {
   }
 }
 
+class Transaction {
+  member:
+    array locks[];
+    hashmap writeVariables[name, value];
+    int versionNumber = -1; // for read-only transaction, -1 by default
+  
+  function init(isReadOnly) {
+    if (isReadOnly) {
+      versionNumber = latestVersionNumber;
+    }
+  }
+}
+
 function runTest(file) {    
   create variables x1~x20;
-  create variableMap = { 'x1': x1, 'x2': x2, ... };
   create site s1~s10;
+  create variableMap = { 'x1': x1, 'x2': x2, ... };
   create siteMap = { 's1': s1, 's2': s2, ... }
+  command.split().substring(1)
   create database;
   create multiVersion[versionNumber, version];
   create int latestVersionNumber;
-  create hashmap transactionMap[transactionNumber, transaction];
-  create array waitList[transaction number];
+  create hashmap transactionMap[transactionString, transaction];
+  create array waitList[string: command];
   create array transactionAge[transaction number];
 
   for (each newline in the file) {
@@ -143,6 +145,24 @@ function runTest(file) {
     // execute input commands
     for (each command in the line) {
       execute corresponding function;
+      string functionName = command.split("(")(0)
+      switch (functionName) {
+        case "R": 
+        case "W":
+        case "recover": 
+        case "dump": {
+          string parameter = command.split("(")(1).split(")")(0);
+          if (parameter.size == 0) {
+            dump();
+          }
+          else if (parameter[0] != "x") {
+            dumpSite(parameter)
+          }
+          else if (parameter[0] == "x") {
+            
+          }
+        }
+      }
       if (execute fail) {
         waitListAppend.push(command);
       }

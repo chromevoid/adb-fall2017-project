@@ -3,41 +3,70 @@ function cycleDetection(waitList) {
   // return a list of transaction in the cycle
   // if no cycle exits
   // return an empty list
+  
+  // waitList is a List of waiting inputs
+  graph blocking;
+  for (each command in waitList) {
+    
+    if (command is not beginRO) {
+      // then the command must have the format
+      // R(T, x) or W(T, x, v)
+      get T from command;
+      get x from command;
+      array pointsTo;
+      // find the transactions that hold the lock on x;
+      for (each transaction in transactionMap) {
+        for (each lock in transaction.locks[]) {
+          if (lock.variable == x) {
+            pointsTo.push(transaction);
+          }
+        }
+      }
+    }
+  }
 }
 
-function abort(T) {
+function abort(string T) {
   release T's locks;
+  delete T from transactionMap[T, transaction];
   delete T from waitList;
   delete T from transactionAge;
 }
 
-function begin(T) {
-  number = toInt(T.substring(1));
-  Transaction T = new Transaction(false);
-  transactionMap[number] = T;
-  transactionAge.push(number);
+function begin(string T) {
+  Transaction T_new = new Transaction(false);
+  transactionMap[T] = T_new;
+  transactionAge.push(T_new);
 }
 
-function beginRO(T) {
+function beginRO(string T) {
   if (multiVersion[latesetVersionNumber].variables has null value) {
     waitListAppend.push("beginRO(T)");
     return;
   }
-  number = toInt(T.substring(1));
-  Transaction T = new Transaction(true);
-  transactionMap[number] = T;
-  multiVersion[latesetVersionNumber].involvedTransaction.push(T);
+  Transaction T_new = new Transaction(false);
+  transactionMap[T] = T_new;
+  multiVersion[latesetVersionNumber].involvedTransaction.push(T_new);
 }
 
-function R(T, x) {
-  if (T.versionNumber == -1) {
+function R(string T, string x) {
+  
+  transactionNumber = toInt(T.substring(1));
+  if (transactionMap[transactionNumber] not found) {
+    // this transaction hasn't begin
+    // ignore this instruction
+    return;
+  }
+  T = transactionMap[transactionNumber];
+  
+  if (T.versionNumber != -1) {
     // if T is a read-only transaction
     // then T doesn't needs locks
     Version versionT = multiVersion[T.versionNumber];
     print(T reads x: version.variables[x]);
     return;
   }
-  if (T is not a read-only transaction) {
+  if (T is not a read-only transaction i.e. T.versionNumber == -1) {
     // acquire read lock on x
     bool getLock = false;
     // if a transaction older than T
@@ -55,7 +84,7 @@ function R(T, x) {
       getLock = false;
     }
     if (!getLock) {
-      push T into waitListAppend;
+      push this_command into waitListAppend;
     }
     else if (getLock) {
       if (x.variableNumber is odd) {
@@ -85,7 +114,16 @@ function R(T, x) {
   }
 }
 
-funtion W(T, x, v) {
+funtion W(string T, string x, int v) {
+  
+  transactionNumber = toInt(T.substring(1));
+  if (transactionMap[transactionNumber] not found) {
+    // this transaction hasn't begin
+    // ignore this instruction
+    return;
+  }
+  T = transactionMap[transactionNumber];
+
   bool getLock = false;
   for (each transaction in waitList) {
     if (transaction needs a read lock or write lock on x) {
@@ -97,7 +135,7 @@ funtion W(T, x, v) {
     getLock = false;
   }
   if (!getLock) {
-    push T into waitListAppend;
+    push this_command into waitListAppend;
   }
   else if (get Lock) {
     if (x.variableNumber is odd) {
@@ -130,12 +168,12 @@ function dump() {
   print database;
 }
 
-function dump(i) {
+function dumpSite(i) {
   use siteMap to get the variable s;
   s.print();
 }
 
-function dump(x) {
+function dumpVariable(x) {
   use variableMap to get the variable x;
   x.print();
 }
@@ -184,6 +222,7 @@ function end(T) {
       x.writeLock = false;
     }
   }
+  delete T from transactionMap[transactionNumber, transaction];
   delete T from waitList;
   delete T from transactionAge;
 }
