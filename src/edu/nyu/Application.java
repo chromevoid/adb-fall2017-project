@@ -10,7 +10,7 @@ import java.io.IOException;
  */
 public class Application {
     public static void main(String[] args) {
-        for(int i = 0; i < args.length; i++) {
+        for(int i = 0; i < 17; i++) {
             TransactionManager tm = new TransactionManager();
             String FileName = args[i];
             String transactionInput = readFile(FileName);
