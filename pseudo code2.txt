@@ -19,7 +19,7 @@ class Variable {
     variableNumber = n;
     value = 10 * n;
     if (n is odd) {
-      int siteNumber = (n + 1) mod 10;
+      int siteNumber = 1 + n mod 10;
       VariableInfo vi = new VariableInfo(value);
       values[siteNumber] = vi;
     }
