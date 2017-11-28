@@ -4,23 +4,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Variable {
-    class VariableInfo {
-        int value;
-        boolean canRead;
-        int readLock;
-        boolean writeLock;
-        public VariableInfo(int value) {
-            this.value = value;
-            this.canRead = true;
-            readLock = 0;
-            writeLock = false;
-        }
-    }
     int number;
     //map stores on siteNumber, ValueInfo
     Map<Integer, VariableInfo> values;
+    boolean writeLock;
     public Variable (int number) {
         this.number = number;
+        this.writeLock = false;
         values = new HashMap<>();
         init(number);
     }
