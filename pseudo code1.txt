@@ -83,6 +83,11 @@ function R(string T, string x) {
     if (x.writeLock) {
       getLock = false;
     }
+    // if every site containing x is down
+    // then T can't get read lock on x
+    if (every site containing x is down) {
+    	getLock = false;
+    }
     if (!getLock) {
       push this_command into waitListAppend;
     }
@@ -133,6 +138,11 @@ funtion W(string T, string x, int v) {
   }
   if (x.writeLock || x.readLock != 0) {
     getLock = false;
+  }
+  // if every site containing x is down
+  // then T can't get read lock on x
+  if (every site containing x is down) {
+	getLock = false;
   }
   if (!getLock) {
     push this_command into waitListAppend;

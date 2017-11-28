@@ -97,8 +97,8 @@ class Version {
     hashmap variables[];
     array involvedTransaction[];
   
-  function init(n, v[]) {
-    versionNumber = n;
+  function init(v[]) {
+    versionNumber = latesetVersionNumber;
     variables[] = v[];
   }
 }
@@ -124,7 +124,8 @@ function runTest(file) {
   command.split().substring(1)
   create database;
   create multiVersion[versionNumber, version];
-  create int latestVersionNumber;
+  create int latestVersionNumber = 0;
+  create version(10, 20, 30, ... , 200);
   create hashmap transactionMap[transactionString, transaction];
   create array waitList[string: command];
   create array transactionAge[transaction number];
