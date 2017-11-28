@@ -40,17 +40,19 @@ function begin(string T) {
 }
 
 function beginRO(string T) {
-  if (multiVersion[latesetVersionNumber].variables has null value) {
-    waitListAppend.push("beginRO(T)");
-    return;
-  }
   Transaction T_new = new Transaction(false);
   transactionMap[T] = T_new;
   multiVersion[latesetVersionNumber].involvedTransaction.push(T_new);
 }
 
-function R(string T, string x) {
+function canExecute(string command) {
+  // beginRO case
+  if (multiVersion[latesetVersionNumber].variables has null value) {
+    waitListAppend.push("beginRO(T)");
+    return;
+  }
   
+  // R(T, x) case
   transactionNumber = toInt(T.substring(1));
   if (transactionMap[transactionNumber] not found) {
     // this transaction hasn't begin
@@ -86,41 +88,11 @@ function R(string T, string x) {
     // if every site containing x is down
     // then T can't get read lock on x
     if (every site containing x is down) {
-    	getLock = false;
+      getLock = false;
     }
-    if (!getLock) {
-      push this_command into waitListAppend;
-    }
-    else if (getLock) {
-      if (x.variableNumber is odd) {
-        siteNumber = 1 + x.variableNumber mod 10;
-        if (x.values[siteNumber][1]) {
-          print(T reads x: x.values[siteNumber][0]);
-          Lock lock = new Lock(x, "read");
-          x.readLock++;
-          push lock into Transaction.locks;
-          return;
-        }
-      }
-      if (x.variableNumber is even) {
-        for (int i = 1; i <= 10; i++) {
-          if (x.values[i][1]) {
-            print(T reads x: x.values[i][0]);
-            Lock lock = new Lock(x, "read");
-            x.readLock++;
-            push lock into Transaction.locks;
-            return;
-          }
-        }
-      }
-      print("all sites contains x are failed");
-    }
-    return;
   }
-}
-
-funtion W(string T, string x, int v) {
   
+  // W(T, x, v) case
   transactionNumber = toInt(T.substring(1));
   if (transactionMap[transactionNumber] not found) {
     // this transaction hasn't begin
@@ -142,15 +114,54 @@ funtion W(string T, string x, int v) {
   // if every site containing x is down
   // then T can't get read lock on x
   if (every site containing x is down) {
-	getLock = false;
+    getLock = false;
   }
-  if (!getLock) {
-    push this_command into waitListAppend;
+}
+
+function R(string T, string x) {
+  // if canExecute(command) is true
+  // then execute R(T, x)
+  if (x.variableNumber is odd) {
+    siteNumber = 1 + x.variableNumber mod 10;
+    if (x.values[siteNumber][1]) {
+      print(T reads x: x.values[siteNumber][0]);
+      Lock lock = new Lock(x, "read");
+      x.readLock++;
+      push lock into Transaction.locks;
+      return;
+    }
   }
-  else if (get Lock) {
-    if (x.variableNumber is odd) {
-      siteNumber = 1 + x.variableNumber mod 10;
-      if (x.values[siteNumber][1]) {
+  if (x.variableNumber is even) {
+    for (int i = 1; i <= 10; i++) {
+      if (x.values[i][1]) {
+        print(T reads x: x.values[i][0]);
+        Lock lock = new Lock(x, "read");
+        x.readLock++;
+        push lock into Transaction.locks;
+        return;
+      }
+    }
+  }
+  print("all sites contains x are failed");
+  return;
+}
+
+funtion W(string T, string x, int v) {
+  // if canExecute(command) is true
+  // then execute W(T, x, v)
+  if (x.variableNumber is odd) {
+    siteNumber = 1 + x.variableNumber mod 10;
+    if (x.values[siteNumber][1]) {
+      T.writeVariables[x.name]= v;
+      Lock lock = new Lock(x, "write");
+      x.writeLock = true;
+      push lock into Transaction.locks;
+      return;
+    }
+  }
+  if (x.variableNumber is even) {
+    for (int i = 1; i <= 10; i++) {
+      if (x.values[i][1]) {
         T.writeVariables[x.name]= v;
         Lock lock = new Lock(x, "write");
         x.writeLock = true;
@@ -158,19 +169,8 @@ funtion W(string T, string x, int v) {
         return;
       }
     }
-    if (x.variableNumber is even) {
-      for (int i = 1; i <= 10; i++) {
-        if (x.values[i][1]) {
-          T.writeVariables[x.name]= v;
-          Lock lock = new Lock(x, "write");
-          x.writeLock = true;
-          push lock into Transaction.locks;
-          return;
-        }
-      }
-    }
-    print("all sites contains x are failed");
   }
+  print("all sites contains x are failed");
   return;
 }
 

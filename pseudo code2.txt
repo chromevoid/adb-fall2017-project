@@ -145,26 +145,29 @@ function runTest(file) {
     create array waitListAppend[transaction number];
     // execute input commands
     for (each command in the line) {
-      execute corresponding function;
-      string functionName = command.split("(")(0)
-      switch (functionName) {
-        case "R": 
-        case "W":
-        case "recover": 
-        case "dump": {
-          string parameter = command.split("(")(1).split(")")(0);
-          if (parameter.size == 0) {
-            dump();
-          }
-          else if (parameter[0] != "x") {
-            dumpSite(parameter)
-          }
-          else if (parameter[0] == "x") {
-            
+      check if  the command can be execute;
+      if (can execute) {
+        // execute corresponding function;
+        string functionName = command.split("(")(0)
+        switch (functionName) {
+          case "R": 
+          case "W":
+          case "recover": 
+          case "dump": {
+            string parameter = command.split("(")(1).split(")")(0);
+            if (parameter.size == 0) {
+              dump();
+            }
+            else if (parameter[0] != "x") {
+              dumpSite(parameter)
+            }
+            else if (parameter[0] == "x") {
+
+            }
           }
         }
       }
-      if (execute fail) {
+      else if (can not execute) {
         waitListAppend.push(command);
       }
     }
@@ -174,9 +177,13 @@ function runTest(file) {
     // and T1 wants a write lock on x, T2 wants a read lock on x
     // then we can't skip T1 and give T2 the read lock
     for (each command in the waitList) {
-      execute corresponding function;
-      if (execute success) {
-        delete command from waitList;
+      check if  the command can be execute;
+      if (can execute) {
+        remove from waitList;
+        // execute corresponding function;
+        if (execute success) {
+          delete command from waitList;
+        }
       }
     }
     waitList.append(waitListAppend);
