@@ -20,7 +20,7 @@ public class Site {
 
     public void print() {
         for (Variable v : variables) {
-            System.out.println("x" + v.number + "." + siteNumber + "=" + v.values.get(this.siteNumber).value);
+            System.out.println("x" + v.number + "." + siteNumber + "=" + v.siteToVariable.get(this.siteNumber).value);
         }
     }
 }
