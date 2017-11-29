@@ -6,31 +6,31 @@ import java.util.Map;
 public class Variable {
     int number;
     //map stores on siteNumber, ValueInfo
-    Map<Integer, VariableInfo> values;
-    boolean writeLock;
+    Map<Integer, VariableInfo> siteToVariable;
+    //boolean writeLock;
     public Variable (int number) {
         this.number = number;
-        this.writeLock = false;
-        values = new HashMap<>();
+        //this.writeLock = false;
+        siteToVariable = new HashMap<>();
         init(number);
     }
     public void init (int n) {
         int value = 10 * n;
         if (n % 2 == 1) {
             int siteNumber = n % 10 + 1;
-            values.put(siteNumber, new VariableInfo(value));
+            siteToVariable.put(siteNumber, new VariableInfo(value));
         }
         else if (n % 2 == 0) {
             for(int i = 1; i <= 10; i++) {
-                values.put(i, new VariableInfo(value));
+                siteToVariable.put(i, new VariableInfo(value));
             }
         }
     }
     public void print() {
         //print all sites' variable information (certain variable's distribution)
         for(int i = 1; i <= 10; i++) {
-            if(values.containsKey(i)) {
-                VariableInfo info = values.get(i);
+            if(siteToVariable.containsKey(i)) {
+                VariableInfo info = siteToVariable.get(i);
                 // e.g. x6.2 is the copy of variable x6 at site 2
                 System.out.println("x" + this.number + "." + i + "=" + info.value);
             }

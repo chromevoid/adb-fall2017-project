@@ -2,8 +2,8 @@ package edu.nyu;
 
 public class Lock {
     String variable;
-    String type;
     int siteNumber;
+    String type;
 
     public Lock(String variable, int siteNumber, String type) {
         this.variable = variable;
