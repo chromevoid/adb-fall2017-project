@@ -1,4 +1,6 @@
 function cycleDetection(waitList) {
+  // ToDo
+  
   // if a cycle exits
   // return a list of transaction in the cycle
   // if no cycle exits
@@ -45,14 +47,8 @@ function beginRO(string T) {
   multiVersion[latesetVersionNumber].involvedTransaction.push(T_new);
 }
 
-function canExecute(string command) {
-  // beginRO case
-  if (multiVersion[latesetVersionNumber].variables has null value) {
-    waitListAppend.push("beginRO(T)");
-    return;
-  }
+function R(string T, string x) {
   
-  // R(T, x) case
   transactionNumber = toInt(T.substring(1));
   if (transactionMap[transactionNumber] not found) {
     // this transaction hasn't begin
@@ -90,9 +86,45 @@ function canExecute(string command) {
     if (every site containing x is down) {
       getLock = false;
     }
+    if (!getLock) {
+      push this_command into waitListAppend;
+    }
+    else if (getLock) {
+      if (x.variableNumber is odd) {
+        siteNumber = 1 + x.variableNumber mod 10;
+        if (x.values[siteNumber][1]) {
+          print(T reads x: x.values[siteNumber][0]);
+          Lock lock = new Lock(x, "read");
+          x.readLock++;
+          push lock into Transaction.locks;
+          return;
+        }
+      }
+      if (x.variableNumber is even) {
+        // choose an available site for even variable
+        // !!!! todo
+        // wrong here: read lock only need to apply to one site
+        //             not all the site
+        for (int i = 1; i <= 10; i++) {
+          if (x.values[i][1]) {
+            print(T reads x: x.values[i][0]);
+            Lock lock = new Lock(x, "read");
+            x.readLock++;
+            push lock into Transaction.locks;
+            return;
+          }
+        }
+      }
+      print("all sites contains x are failed");
+    }
+    return;
   }
+}
+
+funtion W(string T, string x, int v) {
+  // !!! todo: transaction read a value and can later write to the
+  //     same value
   
-  // W(T, x, v) case
   transactionNumber = toInt(T.substring(1));
   if (transactionMap[transactionNumber] not found) {
     // this transaction hasn't begin
@@ -114,54 +146,15 @@ function canExecute(string command) {
   // if every site containing x is down
   // then T can't get read lock on x
   if (every site containing x is down) {
-    getLock = false;
+  getLock = false;
   }
-}
-
-function R(string T, string x) {
-  // if canExecute(command) is true
-  // then execute R(T, x)
-  if (x.variableNumber is odd) {
-    siteNumber = 1 + x.variableNumber mod 10;
-    if (x.values[siteNumber][1]) {
-      print(T reads x: x.values[siteNumber][0]);
-      Lock lock = new Lock(x, "read");
-      x.readLock++;
-      push lock into Transaction.locks;
-      return;
-    }
+  if (!getLock) {
+    push this_command into waitListAppend;
   }
-  if (x.variableNumber is even) {
-    for (int i = 1; i <= 10; i++) {
-      if (x.values[i][1]) {
-        print(T reads x: x.values[i][0]);
-        Lock lock = new Lock(x, "read");
-        x.readLock++;
-        push lock into Transaction.locks;
-        return;
-      }
-    }
-  }
-  print("all sites contains x are failed");
-  return;
-}
-
-funtion W(string T, string x, int v) {
-  // if canExecute(command) is true
-  // then execute W(T, x, v)
-  if (x.variableNumber is odd) {
-    siteNumber = 1 + x.variableNumber mod 10;
-    if (x.values[siteNumber][1]) {
-      T.writeVariables[x.name]= v;
-      Lock lock = new Lock(x, "write");
-      x.writeLock = true;
-      push lock into Transaction.locks;
-      return;
-    }
-  }
-  if (x.variableNumber is even) {
-    for (int i = 1; i <= 10; i++) {
-      if (x.values[i][1]) {
+  else if (get Lock) {
+    if (x.variableNumber is odd) {
+      siteNumber = 1 + x.variableNumber mod 10;
+      if (x.values[siteNumber][1]) {
         T.writeVariables[x.name]= v;
         Lock lock = new Lock(x, "write");
         x.writeLock = true;
@@ -169,8 +162,20 @@ funtion W(string T, string x, int v) {
         return;
       }
     }
+    if (x.variableNumber is even) {
+      // 
+      for (int i = 1; i <= 10; i++) {
+        if (x.values[i][1]) {
+          T.writeVariables[x.name]= v;
+          Lock lock = new Lock(x, "write");
+          x.writeLock = true;
+          push lock into Transaction.locks;
+          return;
+        }
+      }
+    }
+    print("all sites contains x are failed");
   }
-  print("all sites contains x are failed");
   return;
 }
 
@@ -209,6 +214,7 @@ function end(T) {
     return;
   }
   // only commit to available sites
+  // !!!!!! modify canRead
   for (each v in writeVariables) {
     Varibale x = variableMap[v.name];
     for (each element in x.values) {
@@ -238,6 +244,7 @@ function end(T) {
 }
 
 function fail(site) {
+  // !!!!!! modify canRead
   Site s = siteMap[site];
   s.available = false;
   for (each x in variables) {
@@ -245,9 +252,13 @@ function fail(site) {
     x.readLock = 0;
     x.writeLock = false;
   }
+  for (each transaction touched the site) {
+    abort(transaction);
+  }
 }
 
 function recover(site) {
+  // !!!!!! modify canRead
   Site s = siteMap[site];
   s.available = true;
   for (each x in variables) {

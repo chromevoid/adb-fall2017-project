@@ -40,6 +40,7 @@ class Variable {
 }
 
 class Site {
+  // Todo!!!! add a touch table as a new member
   member:
     int siteNumber;
     array variables[];
@@ -93,8 +94,11 @@ class Lock {
 
 class Version {
   member:
+    // the number of the version
     int versionNumber;
+    // the value of the variables in this version
     hashmap variables[];
+    // read-only transactions that are using this version
     array involvedTransaction[];
   
   function init(v[]) {
@@ -103,11 +107,29 @@ class Version {
   }
 }
 
+class History {
+  memeber:
+    stirng type; // type = "read" or "write"
+    array sites[]; // sites that read from or write to
+    string variableName; // the name of the variable that is read or written
+    int value; // the value that is read or written
+  
+  function init(t, s, n, v) {
+    type = t;
+    sties = s;
+    variableName = n;
+    value = v;
+  }
+}
+
 class Transaction {
   member:
+    // the locks held by transaction
     array locks[];
-    hashmap writeVariables[name, value];
-    int versionNumber = -1; // for read-only transaction, -1 by default
+    // successful executed commands
+    queue[History] history;
+    // for read-only transaction, -1 by default
+    int versionNumber = -1;
   
   function init(isReadOnly) {
     if (isReadOnly) {
@@ -121,7 +143,6 @@ function runTest(file) {
   create site s1~s10;
   create variableMap = { 'x1': x1, 'x2': x2, ... };
   create siteMap = { 's1': s1, 's2': s2, ... }
-  command.split().substring(1)
   create database;
   create multiVersion[versionNumber, version];
   create int latestVersionNumber = 0;
@@ -142,51 +163,61 @@ function runTest(file) {
         abort(T);
       }
     }
-    create array waitListAppend[transaction number];
-    // execute input commands
-    for (each command in the line) {
-      check if  the command can be execute;
-      if (can execute) {
-        // execute corresponding function;
-        string functionName = command.split("(")(0)
-        switch (functionName) {
-          case "R": 
-          case "W":
-          case "recover": 
-          case "dump": {
-            string parameter = command.split("(")(1).split(")")(0);
-            if (parameter.size == 0) {
-              dump();
-            }
-            else if (parameter[0] != "x") {
-              dumpSite(parameter)
-            }
-            else if (parameter[0] == "x") {
+    
+    create array waitListNew[transaction number];
+    
+    // execute accumulate input commands
+    for (each command in the waitList) {
+      // execute corresponding function;
+      string functionName = command.split("(")(0)
+      switch (functionName) {
+        case "R": 
+        case "W":
+        case "recover": 
+        case "dump": {
+          string parameter = command.split("(")(1).split(")")(0);
+          if (parameter.size == 0) {
+            dump();
+          }
+          else if (parameter[0] != "x") {
+            dumpSite(parameter)
+          }
+          else if (parameter[0] == "x") {
 
-            }
           }
         }
       }
-      else if (can not execute) {
-        waitListAppend.push(command);
+      if (execute failed) {
+        waitListNew.push(command);
       }
     }
-    // execute accumulate input commands
-    // be careful with read locks
-    // if the order is T1 and T2
-    // and T1 wants a write lock on x, T2 wants a read lock on x
-    // then we can't skip T1 and give T2 the read lock
-    for (each command in the waitList) {
-      check if  the command can be execute;
-      if (can execute) {
-        remove from waitList;
-        // execute corresponding function;
-        if (execute success) {
-          delete command from waitList;
+    
+    // execute input commands
+    for (each command in the line) {
+      // execute corresponding function;
+      string functionName = command.split("(")(0)
+      switch (functionName) {
+        case "R": 
+        case "W":
+        case "recover": 
+        case "dump": {
+          string parameter = command.split("(")(1).split(")")(0);
+          if (parameter.size == 0) {
+            dump();
+          }
+          else if (parameter[0] != "x") {
+            dumpSite(parameter)
+          }
+          else if (parameter[0] == "x") {
+
+          }
         }
       }
+      if (execute failed) {
+        waitListNew.push(command);
+      }
     }
-    waitList.append(waitListAppend);
+    waitList = waitListNew;
   }
   return;
 }
