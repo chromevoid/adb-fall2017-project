@@ -40,7 +40,7 @@ class Variable {
 }
 
 class Site {
-  // Todo!!!! add a touch table as a new member
+  // Todo!!!! add a touch table as a new member. Use set
   member:
     int siteNumber;
     array variables[];
