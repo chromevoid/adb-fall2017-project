@@ -17,7 +17,7 @@ public class TransactionManager {
     // have 10 sites
     Map<Integer, Site> siteMap;
     Map<String, Transaction> transactionMap;
-    List<Transaction> transactionAge;
+    List<String> transactionAge;
     Map<Integer, Version> multiVersion;
     int latestVersionNumber;
     List<String> waitList;
@@ -93,10 +93,10 @@ public class TransactionManager {
 
             // cycle detection
             if (waitList.size() > 1) {
-                List<Transaction> transactionsInCycle = cycleDetection(waitList);
-                if (transactionsInCycle == null || transactionsInCycle.size() > 1) {
+                List<String> transactionsInCycle = cycleDetection(waitList);
+                if (transactionsInCycle != null && transactionsInCycle.size() > 1) {
                     //abort the youngest transaction
-                    Transaction youngest = getYoungestTransaction(transactionsInCycle);
+                    Transaction youngest = transactionMap.get(getYoungestTransaction(transactionsInCycle));
                     abort(youngest);
                 }
             }
@@ -206,13 +206,41 @@ public class TransactionManager {
     }
 
     //TODO: Cycle detection
-    private List<Transaction> cycleDetection(List<String> waitList) {
+    private List<String> cycleDetection(List<String> waitList) {
+        List<String> transactionInCycle = new ArrayList<>();
+        Map<String, List<String>> waitsForGraph = new HashMap<>();
+
+        //initialize the graph
+        for (String command : waitList) {
+            String t = command.split("\\(")[1].split(",")[0];
+            waitsForGraph.put(t, new ArrayList<>());
+        }
+
+        for (int i = 0; i < waitList.size(); i++) {
+            if (!waitList.get(i).contains("RO")) {
+                String t = waitList.get(i).split("\\(")[1].split(",")[0];
+                String v = waitList.get(i).split("\\(")[1].split(",")[1];
+                for(Transaction transaction : transactionMap.values()) {
+                    for(Lock lock : transaction.locks) {
+                        if(lock.variable.equals(v)) {
+                            // t waits for transaction
+                            waitsForGraph.get(t).add(transaction.transactionName);
+                        }
+                    }
+                }
+            }
+        }
+        //detect cycle
+
+
+        return transactionInCycle;
 
     }
 
-    private Transaction getYoungestTransaction(List<Transaction> transactionsInCycle) {
+
+    private String getYoungestTransaction(List<String> transactionsInCycle) {
         int youngestIndex = Integer.MAX_VALUE;
-        for (Transaction t : transactionsInCycle) {
+        for (String t : transactionsInCycle) {
             youngestIndex = Math.min(transactionAge.indexOf(t), youngestIndex);
         }
         return transactionAge.get(youngestIndex);
@@ -226,21 +254,20 @@ public class TransactionManager {
     private void beginTransaction(String transaction) {
         Transaction t = new Transaction(-1, transaction); //not read-only transaction's versionNumber set to default -1
         transactionMap.put(transaction, t);
-        transactionAge.add(t);
+        transactionAge.add(transaction);
     }
 
-    //TODO: commit transaction
     private void endTransaction(String transaction) {
         //if transaction is already, then skip the command
-        if(isTransactionDead(transaction)){
+        if (isTransactionDead(transaction)) {
             return;
         }
 
         /* need 1: update value for write history and print out read history */
         System.out.println("Commit transaction" + transaction);
         Transaction t = transactionMap.get(transaction);
-        for(History history : t.transactionHistory) {
-            if(history.type.equals("read")) {
+        for (History history : t.transactionHistory) {
+            if (history.type.equals("read")) {
                 System.out.print("R(" + transaction + ","
                         + history.variableName + ") at Site + " + history.sites.get(0) + " = " + history.value + "\n");
             }
@@ -248,13 +275,13 @@ public class TransactionManager {
                 //for stdout
                 List<Integer> sites = history.sites;
                 System.out.print("W(" + transaction + "," + history.variableName + "," + history.value + ") at available sites: ");
-                for(Integer site : history.sites) {
+                for (Integer site : history.sites) {
                     System.out.print(site + " ");
                 }
                 System.out.println("");
                 Variable v = variableMap.get(history.variableName);
-                for(Map.Entry<Integer, VariableInfo> entry : v.siteToVariable.entrySet()) {
-                    if(sites.contains(entry.getKey())) {
+                for (Map.Entry<Integer, VariableInfo> entry : v.siteToVariable.entrySet()) {
+                    if (sites.contains(entry.getKey())) {
                         entry.getValue().value = history.value;
                     }
                 }
@@ -275,7 +302,7 @@ public class TransactionManager {
         s.available = false;
         //site is down, lock table is cleared
         for (Variable v : s.variables) {
-            VariableInfo variableOnSite  = v.siteToVariable.get(siteNumber);
+            VariableInfo variableOnSite = v.siteToVariable.get(siteNumber);
             variableOnSite.writeLock = false;
             variableOnSite.readLock = 0;
             variableOnSite.canRead = false;
@@ -293,8 +320,8 @@ public class TransactionManager {
         s.available = true;
         //site is up, odd variable is immediately available for read, even variable has to wait for new commit
         for (Variable v : s.variables) {
-            if(v.number % 2 == 1) {
-                VariableInfo variableOnSite  = v.siteToVariable.get(siteNumber);
+            if (v.number % 2 == 1) {
+                VariableInfo variableOnSite = v.siteToVariable.get(siteNumber);
                 variableOnSite.canRead = true;
             }
         }
@@ -302,7 +329,7 @@ public class TransactionManager {
 
     private boolean write(String transaction, String variable, String valueString) {
         // if the transaction already died, then skip this command, return true
-        if(isTransactionDead(transaction)) {
+        if (isTransactionDead(transaction)) {
             return true;
         }
 
@@ -364,7 +391,7 @@ public class TransactionManager {
 
     private boolean read(String transaction, String variable) {
         // if the transaction already died, then skip this command, return true
-        if(isTransactionDead(transaction)) {
+        if (isTransactionDead(transaction)) {
             return true;
         }
 
@@ -423,12 +450,12 @@ public class TransactionManager {
                 int site = entry.getKey();
                 if (siteMap.get(site).available) {
                     upSites++;
-                    if(!entry.getValue().canRead) {
+                    if (!entry.getValue().canRead) {
                         upAndCanNotReadSites++;
                     }
                 }
             }
-            if(upSites == upAndCanNotReadSites) {
+            if (upSites == upAndCanNotReadSites) {
                 getLock = false;
             }
 
