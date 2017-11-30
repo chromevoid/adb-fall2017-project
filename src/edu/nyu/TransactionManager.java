@@ -101,11 +101,11 @@ public class TransactionManager {
                 }
             }
 
-            //check commands in waitinglist
+            /* step 1: check commands in waitinglist */
             for (String waitingCommand : waitList) {
                 checkCommand(waitingCommand);
             }
-            //check commands in the new tick
+            /* step 2: check commands in the new tick */
             checkCommand(instruction);
             //update waitList for next tick
             waitList = new ArrayList<>(nextWaitList);
@@ -176,6 +176,10 @@ public class TransactionManager {
 
 
     private void abort(Transaction transaction) {
+        removeTransactionFromProcess(transaction);
+    }
+
+    private void removeTransactionFromProcess(Transaction transaction) {
         /* need 1: release T's locks on variables -> update VariableInfo and Site */
         for (History history : transaction.transactionHistory) {
             Variable v = variableMap.get(history.variableName);
@@ -227,6 +231,40 @@ public class TransactionManager {
 
     //TODO: commit transaction
     private void endTransaction(String transaction) {
+        //if transaction is already, then skip the command
+        if(isTransactionDead(transaction)){
+            return;
+        }
+
+        /* need 1: update value for write history and print out read history */
+        System.out.println("Commit transaction" + transaction);
+        Transaction t = transactionMap.get(transaction);
+        for(History history : t.transactionHistory) {
+            if(history.type.equals("read")) {
+                System.out.print("R(" + transaction + ","
+                        + history.variableName + ") at Site + " + history.sites.get(0) + " = " + history.value + "\n");
+            }
+            else {
+                //for stdout
+                List<Integer> sites = history.sites;
+                System.out.print("W(" + transaction + "," + history.variableName + "," + history.value + ") at available sites: ");
+                for(Integer site : history.sites) {
+                    System.out.print(site + " ");
+                }
+                System.out.println("");
+                Variable v = variableMap.get(history.variableName);
+                for(Map.Entry<Integer, VariableInfo> entry : v.siteToVariable.entrySet()) {
+                    if(sites.contains(entry.getKey())) {
+                        entry.getValue().value = history.value;
+                    }
+                }
+            }
+        }
+
+        /* need 2: update version if has write history */
+        createVersion(++latestVersionNumber);
+        /* need 3: remove transaction from the process */
+        removeTransactionFromProcess(transactionMap.get(transaction));
 
 
     }
@@ -237,26 +275,34 @@ public class TransactionManager {
         s.available = false;
         //site is down, lock table is cleared
         for (Variable v : s.variables) {
-            v.siteToVariable.get(siteNumber).writeLock = false;
-            v.siteToVariable.get(siteNumber).readLock = 0;
+            VariableInfo variableOnSite  = v.siteToVariable.get(siteNumber);
+            variableOnSite.writeLock = false;
+            variableOnSite.readLock = 0;
+            variableOnSite.canRead = false;
         }
         //abort transaction which has lock on this site.
         for (Transaction t : s.involvedTransactions) {
             abort(t);
         }
-        //TODO: update version
+
     }
 
     private void recoverSite(String site) {
         int siteNumber = Integer.parseInt(site);
         Site s = siteMap.get(siteNumber);
         s.available = true;
+        //site is up, odd variable is immediately available for read, even variable has to wait for new commit
+        for (Variable v : s.variables) {
+            if(v.number % 2 == 1) {
+                VariableInfo variableOnSite  = v.siteToVariable.get(siteNumber);
+                variableOnSite.canRead = true;
+            }
+        }
     }
 
     private boolean write(String transaction, String variable, String valueString) {
-        //if this transaction already been aborted, then skip this command
-        if (!transactionMap.containsKey(transaction)) {
-            //return true to skip this command.
+        // if the transaction already died, then skip this command, return true
+        if(isTransactionDead(transaction)) {
             return true;
         }
 
@@ -277,7 +323,7 @@ public class TransactionManager {
         /* scenario 2: if every site containing x is down,
         then T can't get write lock on x
         */
-        if (isNoAvailableCopy(variable)) {
+        if (isNoUpSiteForCopy(variable)) {
             getLock = false;
         }
 
@@ -317,9 +363,8 @@ public class TransactionManager {
     }
 
     private boolean read(String transaction, String variable) {
-        //if this transaction already been aborted, then skip this command
-        if (!transactionMap.containsKey(transaction)) {
-            //return true to skip this command.
+        // if the transaction already died, then skip this command, return true
+        if(isTransactionDead(transaction)) {
             return true;
         }
 
@@ -328,7 +373,7 @@ public class TransactionManager {
         if (t.versionNumber != -1) {
             Version version = multiVersion.get(t.versionNumber);
             // if there is no available site for reading
-            if (isNoAvailableCopy(variable)) {
+            if (isNoUpSiteForCopy(variable)) {
                 //can't execute read, have to wait for the site up
                 return false;
             }
@@ -351,6 +396,7 @@ public class TransactionManager {
                     break;
                 }
             }
+
             /* scenario 2: if x already has write lock,
             then T can't get read lock on x
             */
@@ -360,19 +406,40 @@ public class TransactionManager {
                     getLock = false;
                 }
             }
+
             /* scenario 3: if every site containing x is down,
             then T can't get read lock on x
              */
-            if (isNoAvailableCopy(variable)) {
+            if (isNoUpSiteForCopy(variable)) {
                 getLock = false;
             }
+
+            /* scenario 4: if on every available site, x.canRead = false,
+            then T can't get read lock on x
+             */
+            int upSites = 0;
+            int upAndCanNotReadSites = 0;
+            for (Map.Entry<Integer, VariableInfo> entry : variableMap.get(variable).siteToVariable.entrySet()) {
+                int site = entry.getKey();
+                if (siteMap.get(site).available) {
+                    upSites++;
+                    if(!entry.getValue().canRead) {
+                        upAndCanNotReadSites++;
+                    }
+                }
+            }
+            if(upSites == upAndCanNotReadSites) {
+                getLock = false;
+            }
+
             if (getLock) {
                 //read lock on one site, we use the smallest index available site
                 List<Integer> sites = new ArrayList<>(variableMap.get(variable).siteToVariable.keySet());
                 Collections.sort(sites);
                 int targetSite = -1;
                 for (Integer site : sites) {
-                    if (siteMap.get(site).available) {
+                    //can only read from available site and that variable is canRead
+                    if (siteMap.get(site).available && variableMap.get(variable).siteToVariable.get(site).canRead) {
                         targetSite = site;
                         break;
                     }
@@ -396,6 +463,14 @@ public class TransactionManager {
         }
     }
 
+    private boolean isTransactionDead(String transaction) {
+        //if this transaction already been aborted, then skip this command
+        if (!transactionMap.containsKey(transaction)) {
+            return true;
+        }
+        return false;
+    }
+
     private void addHistoryToTransaction(String variable, int value, List<Integer> sites, String transaction, String type) {
         History history = new History("read", variable, value, sites);
         transactionMap.get(transaction).transactionHistory.add(history);
@@ -408,14 +483,14 @@ public class TransactionManager {
         }
     }
 
-    private boolean isNoAvailableCopy(String variable) {
-        boolean noCopies = true;
+
+    private boolean isNoUpSiteForCopy(String variable) {
+        boolean noUpSite = true;
         for (Integer site : variableMap.get(variable).siteToVariable.keySet()) {
             if (siteMap.get(site).available) {
-                noCopies = false;
+                noUpSite = false;
             }
         }
-        return noCopies;
+        return noUpSite;
     }
-
 }

@@ -7,7 +7,7 @@ public class Variable {
     int number;
     //map stores on siteNumber, ValueInfo
     Map<Integer, VariableInfo> siteToVariable;
-    //boolean writeLock;
+
     public Variable (int number) {
         this.number = number;
         //this.writeLock = false;
