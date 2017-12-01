@@ -1,31 +1,73 @@
 function cycleDetection(waitList) {
-  // ToDo
+  // Done
   
-  // if a cycle exits
-  // return a list of transaction in the cycle
-  // if no cycle exits
-  // return an empty list
+  /* if a cycle exits
+   * return a list of transaction in the cycle
+   * if no cycle exits
+   * return an empty list
+  
+   * According to the requirements:
+   * "We will ensure that when a transaction is waiting, 
+   * it will not receive another operation."
+   * In the blocking graph, one transaction will only
+   * point to one other transaction.
+   * But we still use a list to record pointsToTransactions
+  
+   * Question: Is there any circumstance that, in the blocking graph
+   * we will find two cycles?
+  
+   */
+  
+
   
   // waitList is a List of waiting inputs
+  // creat a graph blocking[Transaction, pointsTo[]]
   graph blocking;
+  table indgree[Transaction, indgree];
   for (each command in waitList) {
-    
-    if (command is not beginRO) {
-      // then the command must have the format
-      // R(T, x) or W(T, x, v)
-      get T from command;
-      get x from command;
-      array pointsTo;
-      // find the transactions that hold the lock on x;
-      for (each transaction in transactionMap) {
-        for (each lock in transaction.locks[]) {
-          if (lock.variable == x) {
-            pointsTo.push(transaction);
-          }
+    get T from command;
+    get x from command;
+    array pointsTo;
+    // find the transactions that hold the lock on x;
+    for (each transaction in transactionMap) {
+      if (transaction == T) {
+        continue;
+      }
+      for (each lock in transaction.locks[]) {
+        if (lock.variable == x) {
+          pointsTo.push(transaction);
         }
       }
     }
+    blocking[T] = pointsTo;
   }
+  // detect cycle
+  queue myQueue;
+  for (each transaction in indgree table) {
+    if (indgree[transaction] == 0) {
+      myQueue.push(transaction);
+      remove transaction from indgree table;
+    }
+  }
+  while (!myQueue.empty()) {
+    Transaction T = myQueue.top();
+    myQueue.pop();
+    for (each pointsToTransaction in blocking[T]) {
+      indgree[pointsToTransaction]--;
+      if (indgree[pointsToTransaction] == 0) {
+        myQueue.push();
+        remove pointsToTransaction from indgree table;
+      } 
+    }
+  }
+  // return the cycle
+  List transactionsInCycle = empty list;
+  if (!indgree.empty()) {
+    for (each transaction in indgree table) {
+      transactionsInCycle.push(transaction);
+    }
+  }
+  return transactionsInCycle;
 }
 
 function abort(string T) {
