@@ -205,17 +205,10 @@ public class TransactionManager {
         }
     }
 
-    //TODO: Cycle detection
     private List<String> cycleDetection(List<String> waitList) {
-        List<String> transactionInCycle = new ArrayList<>();
         Map<String, List<String>> waitsForGraph = new HashMap<>();
 
-        //initialize the graph
-        for (String command : waitList) {
-            String t = command.split("\\(")[1].split(",")[0];
-            waitsForGraph.put(t, new ArrayList<>());
-        }
-
+        //initialize the waitsForGraph
         for (int i = 0; i < waitList.size(); i++) {
             if (!waitList.get(i).contains("RO")) {
                 String t = waitList.get(i).split("\\(")[1].split(",")[0];
@@ -223,6 +216,9 @@ public class TransactionManager {
                 for(Transaction transaction : transactionMap.values()) {
                     for(Lock lock : transaction.locks) {
                         if(lock.variable.equals(v)) {
+                            if(!waitsForGraph.containsKey(t)){
+                                waitsForGraph.put(t, new ArrayList<>());
+                            }
                             // t waits for transaction
                             waitsForGraph.get(t).add(transaction.transactionName);
                         }
@@ -230,13 +226,33 @@ public class TransactionManager {
                 }
             }
         }
-        //detect cycle
-
-
-        return transactionInCycle;
-
+        //topological sort detect cycle
+        Map<String, Integer> indegreeMap = new HashMap<>();
+        for(List<String> neighbors : waitsForGraph.values()) {
+            for(String neighbor : neighbors) {
+                indegreeMap.put(neighbor, indegreeMap.getOrDefault(neighbor,0) + 1);
+            }
+        }
+        Queue<String> queue = new LinkedList<>();
+        for(String t : waitsForGraph.keySet()) {
+            //indegree is 0
+            if(!indegreeMap.containsKey(t)) {
+                queue.offer(t);
+            }
+        }
+        while(!queue.isEmpty()) {
+            String t = queue.poll();
+            for(String neighbor : waitsForGraph.get(t)) {
+                indegreeMap.put(neighbor, indegreeMap.get(neighbor) -1);
+                if(indegreeMap.get(neighbor) == 0) {
+                    queue.offer(neighbor);
+                }
+            }
+        }
+        List<String> transactionsInCycle = new ArrayList<>(waitsForGraph.keySet());
+        transactionsInCycle.removeAll(new ArrayList<>(queue));
+        return transactionsInCycle;
     }
-
 
     private String getYoungestTransaction(List<String> transactionsInCycle) {
         int youngestIndex = Integer.MAX_VALUE;
