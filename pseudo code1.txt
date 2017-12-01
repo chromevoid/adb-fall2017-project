@@ -282,18 +282,20 @@ function end(T) {
   if (T.versionNumber != -1) {
     multiVersion[T.versionNumber].involvedtransactions.pop(T);
     cleanVersion(multiVersion);
+    for (each history in T.history[]) {
+      print history;
+    }
     return;
   }
-  // only commit to available sites
-  // !!!!!! modify canRead
-  for (each v in writeVariables) {
-    Varibale x = variableMap[v.name];
-    for (each element in x.values) {
-      if (siteMap["s" + toInt(element[0])].available) {
-        element[1][0] = v.value; // pair(value, canRead)
-        element[1][1] = true; // pair(value, canRead)
+  for (each history in T.history[]) {
+      print history;
+      if (history.type == "wirte") {
+        // only commit to available sites
+        for (each s in sites[]) {
+          update x.value on s = new_value;
+          update x.canRead on s = true;
+        }
       }
-    }
   }
   // update version
   latestVersionNumber++;
@@ -303,10 +305,10 @@ function end(T) {
   // release T's locks
   for (each lock in locks[]) {
     if (lock.type == "read") {
-      x.readLock = x.readLock - 1;
+      x.readLock on lock.siteNumber = x.readLock - 1;
     }
     if (lock.type == "write") {
-      x.writeLock = false;
+      x.writeLock on lock.siteNumber = false;
     }
   }
   delete T from transactionMap[transactionNumber, transaction];
