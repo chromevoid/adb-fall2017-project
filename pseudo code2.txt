@@ -45,6 +45,7 @@ class Site {
     int siteNumber;
     array variables[];
     bool available = True;
+    array involvedTransactions;
 
   function init(n, v[]) {
     siteNumber = n;
@@ -155,12 +156,15 @@ function runTest(file) {
     // cycle detection
     if (waitList.size > 1) {
       list result = cycleDetection(waitList);
-      // if find a cycle
-      // then abort the youngest transaction
-      if (result) {
-        use transactionAge table to find
-          the youngest transaction T in the result;
-        abort(T);
+      while (result is not null && waitList.size > 1) {
+        // if find a cycle
+        // then abort the youngest transaction
+        if (result) {
+          use transactionAge table to find
+            the youngest transaction T in the result;
+          abort(T);
+        }
+        result = cycleDetection(waitList);
       }
     }
     

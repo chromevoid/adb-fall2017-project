@@ -89,23 +89,39 @@ function beginRO(string T) {
   multiVersion[latesetVersionNumber].involvedTransaction.push(T_new);
 }
 
-function R(string T, string x) {
-  
+function transactionExists(T) {
   transactionNumber = toInt(T.substring(1));
   if (transactionMap[transactionNumber] not found) {
     // this transaction hasn't begin
     // ignore this instruction
+    return false;
+  }
+  return true;
+}
+
+function R(string T, string x) {
+  if (!transactionExists(T)) {
     return;
   }
+  
+  transactionNumber = toInt(T.substring(1));
   T = transactionMap[transactionNumber];
   
   if (T.versionNumber != -1) {
     // if T is a read-only transaction
     // then T doesn't needs locks
-    Version versionT = multiVersion[T.versionNumber];
-    print(T reads x: version.variables[x]);
+    choose an available site;
+    if (an site is available) {
+      Version versionT = multiVersion[T.versionNumber];
+      History h = new History("read", sites[{available site}], x, versionT.variables[x]);
+      T.history.push(h);
+    }
+    else {
+      push this_command into waitListAppend;
+    }
     return;
   }
+  
   if (T is not a read-only transaction i.e. T.versionNumber == -1) {
     // acquire read lock on x
     bool getLock = false;
@@ -120,7 +136,7 @@ function R(string T, string x) {
     }
     // if x is write locked
     // then T can't get read lock on x
-    if (x.writeLock) {
+    if (x is write locked) {
       getLock = false;
     }
     // if every site containing x is down
@@ -135,24 +151,24 @@ function R(string T, string x) {
       if (x.variableNumber is odd) {
         siteNumber = 1 + x.variableNumber mod 10;
         if (x.values[siteNumber][1]) {
-          print(T reads x: x.values[siteNumber][0]);
+          array sites[] = {siteNumber};
+          History h = new History("read", sites, x, x.value on siteNumber);
+          T.history.push(h);
           Lock lock = new Lock(x, "read");
           x.readLock++;
-          push lock into Transaction.locks;
+          T.locks.push(lock);
           return;
         }
       }
       if (x.variableNumber is even) {
-        // choose an available site for even variable
-        // !!!! todo
-        // wrong here: read lock only need to apply to one site
-        //             not all the site
         for (int i = 1; i <= 10; i++) {
-          if (x.values[i][1]) {
-            print(T reads x: x.values[i][0]);
+          if (site[i] is avaialbe) {
+            array sites[] = {i};
+            History h = new History("read", sites, x, x.value on site[i]);
+            T.history.push(h);
             Lock lock = new Lock(x, "read");
             x.readLock++;
-            push lock into Transaction.locks;
+            T.locks.push(lock);
             return;
           }
         }
@@ -164,15 +180,12 @@ function R(string T, string x) {
 }
 
 funtion W(string T, string x, int v) {
-  // !!! todo: transaction read a value and can later write to the
-  //     same value
-  
-  transactionNumber = toInt(T.substring(1));
-  if (transactionMap[transactionNumber] not found) {
-    // this transaction hasn't begin
-    // ignore this instruction
+  if (!transactionExists(T)) {
     return;
   }
+  
+  
+  transactionNumber = toInt(T.substring(1));
   T = transactionMap[transactionNumber];
 
   bool getLock = false;
@@ -182,13 +195,21 @@ funtion W(string T, string x, int v) {
       break;
     }
   }
-  if (x.writeLock || x.readLock != 0) {
-    getLock = false;
+  for (each transaction in transactionMap) {
+    if (transaction == T) {
+      // transaction read a value and can
+      // later write to the same value
+      continue;
+    }
+    if (transaction.locks[] contains writeLock on x ||
+        transaction.locks[] contains readLock on x) {
+      getLock = false;
+    }
   }
   // if every site containing x is down
   // then T can't get read lock on x
   if (every site containing x is down) {
-  getLock = false;
+    getLock = false;
   }
   if (!getLock) {
     push this_command into waitListAppend;
@@ -197,24 +218,28 @@ funtion W(string T, string x, int v) {
     if (x.variableNumber is odd) {
       siteNumber = 1 + x.variableNumber mod 10;
       if (x.values[siteNumber][1]) {
-        T.writeVariables[x.name]= v;
+        array sites[] = {siteNumber};
         Lock lock = new Lock(x, "write");
-        x.writeLock = true;
-        push lock into Transaction.locks;
+        x.writeLock on site[i] = true;
+        T.locks.push(lock);
+        History h = new History("write", sites, x, x.value on site[i]);
+        T.history.push(h);
         return;
       }
     }
     if (x.variableNumber is even) {
-      // 
       for (int i = 1; i <= 10; i++) {
-        if (x.values[i][1]) {
-          T.writeVariables[x.name]= v;
+        array sites[];
+        if (site[i] is available && x on site[i] canRead) {
+          sites.push(i);
           Lock lock = new Lock(x, "write");
-          x.writeLock = true;
-          push lock into Transaction.locks;
-          return;
+          x.writeLock on site[i] = true;
+          T.locks.push(lock);
         }
       }
+      History h = new History("write", sites, x, x.value on site[i]);
+      T.history.push(h);
+      return;
     }
     print("all sites contains x are failed");
   }
@@ -249,6 +274,10 @@ function cleanVersion(multiVersion) {
 }
 
 function end(T) {
+  if (!transactionExists(T)) {
+    return;
+  }
+  
   // if T is a read-only transaction
   if (T.versionNumber != -1) {
     multiVersion[T.versionNumber].involvedtransactions.pop(T);
@@ -286,26 +315,25 @@ function end(T) {
 }
 
 function fail(site) {
-  // !!!!!! modify canRead
   Site s = siteMap[site];
-  s.available = false;
   for (each x in variables) {
-    x.values[siteNumber][1] = false; // set canRead to false
-    x.readLock = 0;
-    x.writeLock = false;
+    set canRead to false;
+    set readLock to 0;
+    set writeLock to false;
   }
-  for (each transaction touched the site) {
+  for (each transaction in site.involvedTransactions[]) {
     abort(transaction);
   }
+  s.available = false;
+  site.involvedTransactions[].clear();
 }
 
 function recover(site) {
-  // !!!!!! modify canRead
   Site s = siteMap[site];
-  s.available = true;
   for (each x in variables) {
     if (x is odd number) {
       canRead = true;
     }
   }
+  s.available = true;
 }
