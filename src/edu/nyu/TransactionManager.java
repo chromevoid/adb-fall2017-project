@@ -103,14 +103,13 @@ public class TransactionManager {
                 }
             }
 
-            /* step 1: check commands in the new tick */
-
-
-            /* step 2: check commands in waitinglist */
+            /* step 1: check commands in waitinglist */
 
             for (String waitingCommand : waitList) {
                 checkCommand(waitingCommand);
             }
+
+            /* step 2: check commands in the new tick */
             checkCommand(instruction);
             //update waitList for next tick
             waitList = new ArrayList<>(nextWaitList);
@@ -236,7 +235,7 @@ public class TransactionManager {
             String t = waitList.get(i).split("\\(")[1].split(",")[0];
             String v = waitList.get(i).split("\\(")[1].split(",")[1];
             // add the transaction in the waitList into the in-degreeMap with in-degree = 0
-            inDegreeMap.put(t, inDegreeMap.getOrDefault(t, 0));
+            inDegreeMap.putIfAbsent(t, 0);
             for (Transaction transaction : transactionMap.values()) {
                 for (Lock lock : transaction.locks) {
                     if (lock.type.equals("write")) {
@@ -266,13 +265,10 @@ public class TransactionManager {
 
         // start the topological sort from roots
         Iterator<String> it = inDegreeMap.keySet().iterator();
-        // Iterate over all the elements
         while (it.hasNext()) {
             String t = it.next();
-            // Check if Value associated with Key is ODD
             if (inDegreeMap.get(t) == 0) {
                 queue.add(t);
-                // Remove the element
                 it.remove();
             }
         }
