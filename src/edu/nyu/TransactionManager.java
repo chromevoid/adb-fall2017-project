@@ -334,7 +334,7 @@ public class TransactionManager {
                 for the case that same transaction first write and then read the same variable on the same site */
                 int value = variableMap.get(history.variableName).siteToVariable.get(history.sites.get(0)).value;
                 System.out.print("R(" + transaction + ","
-                        + history.variableName + ") at Site " + history.sites.get(0) + " = " + history.value + "\n");
+                        + history.variableName + ") at Site " + history.sites.get(0) + " = " + value + "\n");
 
             }
             else {
@@ -406,38 +406,23 @@ public class TransactionManager {
         Variable v = variableMap.get(variable);
         int value = Integer.parseInt(valueString);
         boolean getLock = true;
-//        /* scenario 1: if a transaction is older than T (Not T) requires an write lock or read lock on x in the waitList,
-//        then T can't get write lock on x
-//        */
-//        for (String waitCommand : waitList) {
-//            String waitingTransaction = waitCommand.trim().split("\\(")[1].trim().split(",")[0].trim();
-//            boolean isOlder = transactionAge.indexOf(waitingTransaction) < transactionAge.indexOf(transaction) ? true : false;
-////            System.out.println("waitCommand index is " + transactionAge.indexOf(waitCommand));
-////            System.out.println("this transaction index is " + transactionAge.indexOf(transaction));
-////            System.out.println("isOlder:" + isOlder);
-//            if (waitCommand.contains(variable) && !waitCommand.contains(transaction)) {
-//                getLock = false;
-//                System.out.println("in scenario 1 can't get lock");
-//                break;
-//            }
-//        }
 
-        /* scenario 2: if every site containing x is down,
+        /* scenario 1: if every site containing x is down,
         then T can't get write lock on x
         */
         if (isNoUpSiteForCopy(variable)) {
             getLock = false;
-//            System.out.println("in scenario 2 can't get lock");
+//            System.out.println("in scenario 1 can't get lock");
         }
 
-        /* if one of the available variables already has write lock or read lock,
+        /* scenario 2: if one of the available variables already has write lock or read lock,
         then T can't get write lock (except that transaction is the same transaction)
         */
         for (Transaction tr : transactionMap.values()) {
             for (Lock lock : tr.locks) {
                 if (lock.variable.equals(variable) && !tr.transactionName.equals(transaction)) {
                     getLock = false;
-//                    System.out.println("in scenario 3 can't get lock");
+//                    System.out.println("in scenario 2 can't get lock");
                     break;
                 }
             }
