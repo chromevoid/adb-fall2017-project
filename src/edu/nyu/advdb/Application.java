@@ -1,4 +1,4 @@
-package edu.nyu;
+package edu.nyu.advdb;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -10,7 +10,7 @@ import java.io.IOException;
  */
 public class Application {
     public static void main(String[] args) {
-        for(int i = 19; i <= 19; i++) {
+        for(int i = 1; i <= 22; i++) {
             TransactionManager tm = new TransactionManager();
             String FileName = args[i-1];
             String transactionInput = readFile(FileName);
