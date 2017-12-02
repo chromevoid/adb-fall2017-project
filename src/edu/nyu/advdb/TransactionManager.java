@@ -1,5 +1,7 @@
 package edu.nyu.advdb;
 
+import com.sun.tools.classfile.ConstantPool;
+
 import java.util.*;
 
 /**
@@ -12,9 +14,7 @@ import java.util.*;
  */
 public class TransactionManager {
     private Database db;
-    // have 20 variables
     private Map<String, Variable> variableMap;
-    // have 10 sites
     private Map<Integer, Site> siteMap;
     private Map<String, Transaction> transactionMap;
     private List<String> transactionAge;
@@ -43,7 +43,7 @@ public class TransactionManager {
 
     private void createVersion(int latestVersionNumber) {
         Map<String, Integer> variables = new HashMap<>();
-        for (int i = 1; i <= 20; i++) {
+        for (int i = 1; i <= Constants.VARIABLE_AMOUNT; i++) {
             int value = -1;
             Map<Integer, VariableInfo> values = variableMap.get("x" + i).getSiteToVariableMap();
             for (VariableInfo info : values.values()) {
@@ -61,7 +61,7 @@ public class TransactionManager {
     }
 
     public void initializeSite() {
-        for (int i = 1; i <= 10; i++) {
+        for (int i = 1; i <= Constants.SITE_AMOUNT; i++) {
             Site site = new Site(i);
             siteMap.put(i, site);
             db.addSite(site);
@@ -69,18 +69,18 @@ public class TransactionManager {
     }
 
     public void initializeVariable() {
-        for (int i = 1; i <= 20; i++) {
+        for (int i = 1; i <= Constants.VARIABLE_AMOUNT; i++) {
             String variableName = "x" + i;
             Variable v = new Variable(i);
             variableMap.put(variableName, v);
             //if variable is even, it exists on all sits
             if (i % 2 == 0) {
-                for (int j = 1; j < 10; j++) {
+                for (int j = 1; j < Constants.SITE_AMOUNT; j++) {
                     siteMap.get(j).addVariable(v);
                 }
             }
             else {
-                int siteNumber = i % 10 + 1;
+                int siteNumber = i % Constants.SITE_AMOUNT + 1;
                 siteMap.get(siteNumber).addVariable(v);
             }
         }
@@ -197,7 +197,7 @@ public class TransactionManager {
             List<Integer> sites = history.getSites();
             for (Integer site : sites) {
                 /* need 1.1 update the variable on that site -> release locks */
-                if (history.getType().equals("write")) {
+                if (history.getType().equals(Constants.WRITE_LOCK)) {
                     //System.out.println("releasing write lock on " + history.variableName + " " + site);
                     v.getSiteToVariableMap().get(site).setWriteLock(false);
 
@@ -238,7 +238,7 @@ public class TransactionManager {
             inDegreeMap.putIfAbsent(t, 0);
             for (Transaction transaction : transactionMap.values()) {
                 for (Lock lock : transaction.getLocks()) {
-                    if (lock.getType().equals("write")) {
+                    if (lock.getType().equals(Constants.WRITE_LOCK)) {
                         if (waitsForGraph.containsKey(t)) {
                             if (waitsForGraph.get(t).contains(transaction.getTransactionName())) {
                                 continue;
@@ -307,7 +307,7 @@ public class TransactionManager {
     }
 
     private void beginTransaction(String transaction) {
-        Transaction t = new Transaction(-1, transaction); //not read-only transaction's versionNumber set to default -1
+        Transaction t = new Transaction(Constants.READ_WRITE_TRANSACTION_VERSION, transaction); //not read-only transaction's versionNumber set to default -1
         transactionMap.put(transaction, t);
         transactionAge.add(transaction);
     }
@@ -321,7 +321,7 @@ public class TransactionManager {
         /* need 1: update value for write history and print out read history */
         System.out.println("=== Commit transaction " + transaction + " ===");
         Transaction t = transactionMap.get(transaction);
-        if (t.getVersionNumber() != -1) {
+        if (t.getVersionNumber() != Constants.READ_WRITE_TRANSACTION_VERSION) {
             System.out.println("It's a Read-Only transaction reading variables as the program goes");
         }
         for (History history : t.getTransactionHistory()) {
@@ -432,13 +432,13 @@ public class TransactionManager {
                 if (siteMap.get(site).isAvailable()) {
                     entry.getValue().setWriteLock(true);
                     //update transaction
-                    Lock lock = new Lock(variable, site, "write");
+                    Lock lock = new Lock(variable, site, Constants.WRITE_LOCK);
                     transactionMap.get(transaction).addLock(lock);
                     availableSites.add(site);
 
                 }
             }
-            addHistoryToTransaction(variable, value, availableSites, transaction, "write");
+            addHistoryToTransaction(variable, value, availableSites, transaction, Constants.WRITE_LOCK);
             addTransactionToSite(availableSites, t);
             return true;
         }
@@ -455,7 +455,7 @@ public class TransactionManager {
 
         Transaction t = transactionMap.get(transaction);
         //if T is read-only transaction
-        if (t.getVersionNumber() != -1) {
+        if (t.getVersionNumber() != Constants.READ_WRITE_TRANSACTION_VERSION) {
             Version version = multiVersion.get(t.getVersionNumber());
             // if there is no available site for reading
             if (isNoUpSiteForCopy(variable)) {
@@ -477,7 +477,7 @@ public class TransactionManager {
             */
             for (String waitCommand : waitList) {
                 boolean isOlder = transactionAge.indexOf(waitCommand) < transactionAge.indexOf(transaction) ? true : false;
-                if (waitCommand.contains(variable) && waitCommand.contains("W") && !waitCommand.contains(transaction)) {
+                if (waitCommand.contains(variable) && waitCommand.contains(Constants.WRITE_OPERATION) && !waitCommand.contains(transaction)) {
                     getLock = false;
                     break;
                 }
@@ -490,7 +490,7 @@ public class TransactionManager {
                 //if one variable at one site is already write locked by other transaction,
                 //then can't read lock
                 for (Lock lock : trans.getLocks()) {
-                    if (lock.getVariable().equals(variable) && !(trans.getTransactionName().equals(transaction)) && lock.getType().equals("write")) {
+                    if (lock.getVariable().equals(variable) && !(trans.getTransactionName().equals(transaction)) && lock.getType().equals(Constants.WRITE_LOCK)) {
                         getLock = false;
                     }
                 }
@@ -543,7 +543,7 @@ public class TransactionManager {
 
                 List<Integer> targetSites = new ArrayList<>();
                 targetSites.add(targetSite);
-                addHistoryToTransaction(variable, value, targetSites, transaction, "read");
+                addHistoryToTransaction(variable, value, targetSites, transaction, Constants.READ_LOCK);
                 addTransactionToSite(targetSites, t);
                 return true;
             }
