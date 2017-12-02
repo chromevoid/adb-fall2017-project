@@ -227,55 +227,72 @@ public class TransactionManager {
 
     private List<String> cycleDetection(List<String> waitList) {
         Map<String, List<String>> waitsForGraph = new HashMap<>();
+        Map<String, Integer> inDegreeMap = new HashMap<>();
 
         //initialize the waitsForGraph
         for (int i = 0; i < waitList.size(); i++) {
+            // t is the transaction in the command
+            // v is the variable in the command
             String t = waitList.get(i).split("\\(")[1].split(",")[0];
             String v = waitList.get(i).split("\\(")[1].split(",")[1];
+            // add the transaction in the waitList into the in-degreeMap with in-degree = 0
+            inDegreeMap.put(t, inDegreeMap.getOrDefault(t, 0));
             for (Transaction transaction : transactionMap.values()) {
                 for (Lock lock : transaction.locks) {
+                    if (lock.type.equals("write")) {
+                        if (waitsForGraph.containsKey(t)) {
+                            if (waitsForGraph.get(t).contains(transaction.transactionName)) {
+                                continue;
+                            }
+                        }
+                    }
                     if (lock.variable.equals(v)) {
                         if (!waitsForGraph.containsKey(t)) {
                             waitsForGraph.put(t, new ArrayList<>());
                         }
+                        if (!inDegreeMap.containsKey(t)) {
+                            inDegreeMap.put(t, 0);
+                        }
                         // t waits for transaction
                         waitsForGraph.get(t).add(transaction.transactionName);
+                        // update the pointsToTransaction's in-degree: add by 1
+                        inDegreeMap.put(transaction.transactionName, inDegreeMap.getOrDefault(transaction.transactionName, 0) + 1);
                     }
                 }
             }
-
-
         }
         //topological sort detect cycle
-        Map<String, Integer> indegreeMap = new HashMap<>();
-        for (List<String> neighbors : waitsForGraph.values()) {
-            for (String neighbor : neighbors) {
-                indegreeMap.put(neighbor, indegreeMap.getOrDefault(neighbor, 0) + 1);
-            }
-        }
         Queue<String> queue = new LinkedList<>();
-        List<String> tNotInCycle = new ArrayList<>();
-        for (String t : waitsForGraph.keySet()) {
-            //indegree is 0
-            if (!indegreeMap.containsKey(t)) {
-                tNotInCycle.add(t);
+
+        // start the topological sort from roots
+        Iterator<String> it = inDegreeMap.keySet().iterator();
+        // Iterate over all the elements
+        while (it.hasNext()) {
+            String t = it.next();
+            // Check if Value associated with Key is ODD
+            if (inDegreeMap.get(t) == 0) {
+                queue.add(t);
+                // Remove the element
+                it.remove();
             }
         }
 
         while (!queue.isEmpty()) {
             String t = queue.poll();
+            if (!waitsForGraph.containsKey(t)) {
+                continue;
+            }
             for (String neighbor : waitsForGraph.get(t)) {
-                if (indegreeMap.get(neighbor) == 0) {
-                    tNotInCycle.add(neighbor);
+                inDegreeMap.put(neighbor, inDegreeMap.get(neighbor) - 1);
+                if (inDegreeMap.get(neighbor) == 0) {
+                    queue.add(neighbor);
+                    inDegreeMap.remove(neighbor);
                 }
-                indegreeMap.put(neighbor, indegreeMap.get(neighbor) - 1);
             }
         }
         List<String> transactionsInCycle = new ArrayList<>();
-        for (String tInwaitList : waitsForGraph.keySet()) {
-            if (!tNotInCycle.contains(tInwaitList)) {
-                transactionsInCycle.add(tInwaitList);
-            }
+        for (String t : inDegreeMap.keySet()) {
+            transactionsInCycle.add(t);
         }
         return transactionsInCycle;
     }
