@@ -290,10 +290,10 @@ public class TransactionManager {
         transactionAge.add(transaction);
     }
 
-    private boolean endTransaction(String transaction) {
+    private void endTransaction(String transaction) {
         //if transaction is already, then skip the command
         if (isTransactionDead(transaction)) {
-            return true;
+            return;
         }
 
         /* need 1: update value for write history and print out read history */
@@ -336,7 +336,6 @@ public class TransactionManager {
 
         /* need 3: remove transaction from the process */
         removeTransactionFromProcess(transactionMap.get(transaction));
-        return true;
 
     }
 
@@ -371,10 +370,10 @@ public class TransactionManager {
         }
     }
 
-    private void write(String transaction, String variable, String valueString) {
+    private boolean write(String transaction, String variable, String valueString) {
         // if the transaction already died, then skip this command, return true
         if (isTransactionDead(transaction)) {
-            return;
+            return true;
         }
 
         Transaction t = transactionMap.get(transaction);
@@ -387,6 +386,9 @@ public class TransactionManager {
 //        for (String waitCommand : waitList) {
 //            String waitingTransaction = waitCommand.trim().split("\\(")[1].trim().split(",")[0].trim();
 //            boolean isOlder = transactionAge.indexOf(waitingTransaction) < transactionAge.indexOf(transaction) ? true : false;
+////            System.out.println("waitCommand index is " + transactionAge.indexOf(waitCommand));
+////            System.out.println("this transaction index is " + transactionAge.indexOf(transaction));
+////            System.out.println("isOlder:" + isOlder);
 //            if (waitCommand.contains(variable) && !waitCommand.contains(transaction)) {
 //                getLock = false;
 //                System.out.println("in scenario 1 can't get lock");
@@ -431,7 +433,11 @@ public class TransactionManager {
             }
             addHistoryToTransaction(variable, value, availableSites, transaction, "write");
             addTransactionToSite(availableSites, t);
+            return true;
         }
+
+        //else can't execute this command right now
+        return false;
     }
 
     private boolean read(String transaction, String variable) {
@@ -458,7 +464,7 @@ public class TransactionManager {
         //if T is not a read-only transaction, t.versionNumber == -1
         else {
             boolean getLock = true;
-            //TODO: might problem here
+
             /* scenario 1: if a transaction is older than T (not T) requires an write lock on x in the waitList,
             then T can't get read lock on x
             */
