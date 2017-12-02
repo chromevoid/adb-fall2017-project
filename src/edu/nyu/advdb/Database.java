@@ -1,10 +1,10 @@
-package edu.nyu;
+package edu.nyu.advdb;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Database {
-    List<Site> sites;
+    private List<Site> sites;
 
     public Database() {
         this.sites = new ArrayList<>();
@@ -16,7 +16,7 @@ public class Database {
 
     public void print() {
         for (Site site : sites) {
-            System.out.println("site " + site.siteNumber + ": ");
+            System.out.println("site " + site.getSiteNumber() + ": ");
             site.print();
         }
     }
