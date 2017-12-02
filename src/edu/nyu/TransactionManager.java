@@ -91,7 +91,7 @@ public class TransactionManager {
         String[] instructions = input.split("\n");
 
         for (String instruction : instructions) {
-            System.out.println("New time step, Input line is： " + instruction);
+            System.out.println("!!! New time step, Input line is： " + instruction);
             // when each tick starts
             // cycle detection
             if (waitList.size() > 1) {
@@ -104,13 +104,14 @@ public class TransactionManager {
             }
 
             /* step 1: check commands in the new tick */
-            checkCommand(instruction);
+
 
             /* step 2: check commands in waitinglist */
 
             for (String waitingCommand : waitList) {
                 checkCommand(waitingCommand);
             }
+            checkCommand(instruction);
             //update waitList for next tick
             waitList = new ArrayList<>(nextWaitList);
             nextWaitList = new ArrayList<>();
@@ -118,6 +119,7 @@ public class TransactionManager {
             for (String waitingCommand : waitList) {
                 System.out.println("\t" + waitingCommand);
             }
+            System.out.println("\n");
         }
     }
 
