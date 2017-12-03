@@ -5,6 +5,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * This class stores the site information.
+ */
 public class Site {
     private int siteNumber;
     private List<Variable> variables;

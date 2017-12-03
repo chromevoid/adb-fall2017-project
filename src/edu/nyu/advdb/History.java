@@ -2,11 +2,15 @@ package edu.nyu.advdb;
 
 import java.util.List;
 
+/**
+ * This class is used to store transaction operation history.
+ */
 public class History {
     private String type;
     private String variableName;
     private int value;
     private List<Integer> sites;
+
     public History(String type, String variableName, int value, List<Integer> sites) {
         this.type = type;
         this.variableName = variableName;
