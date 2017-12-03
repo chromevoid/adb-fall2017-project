@@ -1,5 +1,8 @@
 package edu.nyu.advdb;
 
+/**
+ * This constants class is used to store constant special variables in the process.
+ */
 public class Constants {
     public final static String READ_OPERATION = "R";
     public final static String WRITE_OPERATION = "W";

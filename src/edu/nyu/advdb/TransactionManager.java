@@ -1,7 +1,5 @@
 package edu.nyu.advdb;
 
-import com.sun.tools.classfile.ConstantPool;
-
 import java.util.*;
 
 /**
@@ -41,6 +39,12 @@ public class TransactionManager {
         createVersion(latestVersionNumber);
     }
 
+    /**
+     * This method creates a new version based on current version number
+     * and every variable value from available sites.
+     *
+     * @param latestVersionNumber current version number
+     */
     private void createVersion(int latestVersionNumber) {
         Map<String, Integer> variables = new HashMap<>();
         for (int i = 1; i <= Constants.VARIABLE_AMOUNT; i++) {
@@ -56,10 +60,16 @@ public class TransactionManager {
         multiVersion.put(latestVersionNumber, version);
     }
 
+    /**
+     * This method is used to create a new database wrapping up every data and information.
+     */
     private void initializeDatabase() {
         Database db = new Database();
     }
 
+    /**
+     * This method is used to create a new site.
+     */
     public void initializeSite() {
         for (int i = 1; i <= Constants.SITE_AMOUNT; i++) {
             Site site = new Site(i);
@@ -68,6 +78,9 @@ public class TransactionManager {
         }
     }
 
+    /**
+     * This method is used to give variables initial value.
+     */
     public void initializeVariable() {
         for (int i = 1; i <= Constants.VARIABLE_AMOUNT; i++) {
             String variableName = "x" + i;
@@ -86,6 +99,11 @@ public class TransactionManager {
         }
     }
 
+    /**
+     * This method runs every line from given input and parses the input to execute in the database.
+     *
+     * @param input commands to be executed
+     */
     void runTest(String input) {
         System.out.println("\nNew Test starts: " + "\n");
         String[] instructions = input.split("\n");
@@ -104,7 +122,6 @@ public class TransactionManager {
             }
 
             /* step 1: check commands in waitinglist */
-
             for (String waitingCommand : waitList) {
                 checkCommand(waitingCommand);
             }
@@ -122,6 +139,12 @@ public class TransactionManager {
         }
     }
 
+    /**
+     * This method checks each instruction, executes it if it could be executed,
+     * otherwise, the instruction will be put into waitlist.
+     *
+     * @param instruction instruction to be executed
+     */
     private void checkCommand(String instruction) {
         String[] commandFileds = instruction.split("\\(");
         String command = commandFileds[0];
@@ -185,11 +208,22 @@ public class TransactionManager {
     }
 
 
+    /**
+     * This method aborts the transaction.
+     *
+     * @param transaction transaction instance to be aborted
+     * @param reason      reason why the transaction is aborted
+     */
     private void abort(Transaction transaction, String reason) {
         removeTransactionFromProcess(transaction);
         System.out.println("Transaction " + transaction.getTransactionName() + " is aborted. Reason: " + reason);
     }
 
+    /**
+     * This method remove the transaction from the process after transaction is aborted or committed.
+     *
+     * @param transaction transaction instance to be remove from the process
+     */
     private void removeTransactionFromProcess(Transaction transaction) {
         /* need 1: release T's locks on variables -> update VariableInfo and Site */
         for (History history : transaction.getTransactionHistory()) {
@@ -224,6 +258,12 @@ public class TransactionManager {
         waitList = new ArrayList<>(waitListAfterAbort);
     }
 
+    /**
+     * This method detects cycle in the command waitList.
+     *
+     * @param waitList command waitList which contains commands can't be executed right now
+     * @return a list of transaction names which are in cycle
+     */
     private List<String> cycleDetection(List<String> waitList) {
         Map<String, List<String>> waitsForGraph = new HashMap<>();
         Map<String, Integer> inDegreeMap = new HashMap<>();
@@ -293,6 +333,12 @@ public class TransactionManager {
         return transactionsInCycle;
     }
 
+    /**
+     * This method gets the transaction name which is youngest in the list.
+     *
+     * @param transactionsInCycle a list of transactions in cycle
+     * @return the youngest transaction name
+     */
     private String getYoungestTransaction(List<String> transactionsInCycle) {
         int youngestIndex = Integer.MIN_VALUE;
         for (String t : transactionsInCycle) {
@@ -301,17 +347,33 @@ public class TransactionManager {
         return transactionAge.get(youngestIndex);
     }
 
+    /**
+     * This methods executes the begin read-only transaction command.
+     *
+     * @param instruction command
+     * @param transaction transaction name
+     */
     private void beginReadOnlyTransaction(String instruction, String transaction) {
         Transaction t = new Transaction(latestVersionNumber, transaction);
         transactionMap.put(transaction, t);
     }
 
+    /**
+     * This method executes the begin read-write transaction command.
+     *
+     * @param transaction transaction name
+     */
     private void beginTransaction(String transaction) {
         Transaction t = new Transaction(Constants.READ_WRITE_TRANSACTION_VERSION, transaction); //not read-only transaction's versionNumber set to default -1
         transactionMap.put(transaction, t);
         transactionAge.add(transaction);
     }
 
+    /**
+     * This method executes the end transaction command.
+     *
+     * @param transaction transaction name
+     */
     private void endTransaction(String transaction) {
         //if transaction is already, then skip the command
         if (isTransactionDead(transaction)) {
@@ -329,8 +391,7 @@ public class TransactionManager {
                 /* need 1.1 get read value from the current site,
                 for the case that same transaction first write and then read the same variable on the same site */
                 int value = variableMap.get(history.getVariableName()).getSiteToVariableMap().get(history.getSites().get(0)).getValue();
-                System.out.print("R(" + transaction + ","
-                        + history.getVariableName() + ") at Site " + history.getSites().get(0) + " = " + value + "\n");
+                System.out.print("R(" + transaction + "," + history.getVariableName() + ") at Site " + history.getSites().get(0) + " = " + value + "\n");
 
             }
             else {
@@ -361,6 +422,11 @@ public class TransactionManager {
 
     }
 
+    /**
+     * This method executes the fail site command.
+     *
+     * @param site site name
+     */
     private void failSite(String site) {
         int siteNumber = Integer.parseInt(site);
         Site s = siteMap.get(siteNumber);
@@ -379,6 +445,11 @@ public class TransactionManager {
 
     }
 
+    /**
+     * This method executes the recover site command.
+     *
+     * @param site site name
+     */
     private void recoverSite(String site) {
         int siteNumber = Integer.parseInt(site);
         Site s = siteMap.get(siteNumber);
@@ -392,6 +463,14 @@ public class TransactionManager {
         }
     }
 
+    /**
+     * This method executes the write command.
+     *
+     * @param transaction transaction name
+     * @param variable    variable name
+     * @param valueString value in string format
+     * @return true - write command is executed; false - write command can't be executed now.
+     */
     private boolean write(String transaction, String variable, String valueString) {
         // if the transaction already died, then skip this command, return true
         if (isTransactionDead(transaction)) {
@@ -408,7 +487,7 @@ public class TransactionManager {
         */
         if (isNoUpSiteForCopy(variable)) {
             getLock = false;
-//            System.out.println("in scenario 1 can't get lock");
+            //            System.out.println("in scenario 1 can't get lock");
         }
 
         /* scenario 2: if one of the available variables already has write lock or read lock,
@@ -418,7 +497,7 @@ public class TransactionManager {
             for (Lock lock : tr.getLocks()) {
                 if (lock.getVariable().equals(variable) && !tr.getTransactionName().equals(transaction)) {
                     getLock = false;
-//                    System.out.println("in scenario 2 can't get lock");
+                    //                    System.out.println("in scenario 2 can't get lock");
                     break;
                 }
             }
@@ -447,6 +526,13 @@ public class TransactionManager {
         return false;
     }
 
+    /**
+     * This method executes the read command.
+     *
+     * @param transaction transaction name
+     * @param variable    variable name
+     * @return true - read command is executed; false - read command can't be executed right now.
+     */
     private boolean read(String transaction, String variable) {
         // if the transaction already died, then skip this command, return true
         if (isTransactionDead(transaction)) {
@@ -552,6 +638,12 @@ public class TransactionManager {
         }
     }
 
+    /**
+     * This method checks that if transaction is already died. (aborted or committed)
+     *
+     * @param transaction transaction name
+     * @return true - transaction still exists in the process; false - transaction is aborted or committed
+     */
     private boolean isTransactionDead(String transaction) {
         //if this transaction already been aborted, then skip this command
         if (!transactionMap.containsKey(transaction)) {
@@ -560,19 +652,39 @@ public class TransactionManager {
         return false;
     }
 
+    /**
+     * This method adds transaction history record to transaction.
+     *
+     * @param variable    variable name
+     * @param value       value
+     * @param sites       a list of involved sites
+     * @param transaction transaction name
+     * @param type        operation type (read or write)
+     */
     private void addHistoryToTransaction(String variable, int value, List<Integer> sites, String transaction, String type) {
         History history = new History(type, variable, value, sites);
         transactionMap.get(transaction).addTransactionHistory(history);
 
     }
 
+    /**
+     * This method adds Transaction info to site.
+     *
+     * @param sites       a list of involved sites
+     * @param transaction transaction instance
+     */
     private void addTransactionToSite(List<Integer> sites, Transaction transaction) {
         for (Integer site : sites) {
             siteMap.get(site).addTransaction(transaction);
         }
     }
 
-
+    /**
+     * This method checks if all sites contains the variable are down.
+     *
+     * @param variable variable name
+     * @return true - no available sites; false - has available sites.
+     */
     private boolean isNoUpSiteForCopy(String variable) {
         boolean noUpSite = true;
 

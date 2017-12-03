@@ -3,6 +3,9 @@ package edu.nyu.advdb;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * This class is used to store whole database information.
+ */
 public class Database {
     private List<Site> sites;
 

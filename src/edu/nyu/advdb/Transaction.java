@@ -3,6 +3,9 @@ package edu.nyu.advdb;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * This method stores transaction information.
+ */
 public class Transaction {
     private List<Lock> locks;
     private List<History> transactionHistory;
@@ -19,7 +22,8 @@ public class Transaction {
     public void addLock(Lock lock) {
         this.locks.add(lock);
     }
-    public  void addTransactionHistory(History history) {
+
+    public void addTransactionHistory(History history) {
         this.transactionHistory.add(history);
     }
 

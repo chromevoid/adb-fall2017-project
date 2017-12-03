@@ -1,5 +1,8 @@
 package edu.nyu.advdb;
 
+/**
+ * This class is used to store lock information.
+ */
 public class Lock {
     private String variable;
     private int siteNumber;

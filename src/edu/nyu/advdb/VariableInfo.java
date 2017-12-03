@@ -1,5 +1,9 @@
 package edu.nyu.advdb;
 
+/**
+ * This class is used to record the certain variable on certain site,
+ * including value, canRead, readLock and writeLock.
+ */
 public class VariableInfo {
     private int value;
     private boolean canRead;
@@ -24,6 +28,7 @@ public class VariableInfo {
     public void clearReadLock() {
         this.readLock = 0;
     }
+
     public void addReadLock() {
         this.readLock++;
     }
