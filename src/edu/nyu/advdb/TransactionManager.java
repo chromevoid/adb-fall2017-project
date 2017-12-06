@@ -149,7 +149,6 @@ public class TransactionManager {
         String[] commandFileds = instruction.split("\\(");
         String command = commandFileds[0];
         String[] fields = commandFileds[1].replace(")", "").split(",");
-        System.out.println("Now check command: " + instruction);
         if (command.equals("R")) {
             String transaction = fields[0].trim();
             String variable = fields[1].trim();
@@ -383,18 +382,20 @@ public class TransactionManager {
         /* need 1: update value for write history and print out read history */
         System.out.println("=== Commit transaction " + transaction + " ===");
         Transaction t = transactionMap.get(transaction);
-        if (t.getVersionNumber() != Constants.READ_WRITE_TRANSACTION_VERSION) {
-            System.out.println("It's a Read-Only transaction reading variables as the program goes");
-        }
+        /* According to the requirement, all read prints as the program goes. even later the transaction is aborted. */
+//        if (t.getVersionNumber() != Constants.READ_WRITE_TRANSACTION_VERSION) {
+//            System.out.println("It's a Read-Only transaction reading variables as the program goes");
+//        }
         for (History history : t.getTransactionHistory()) {
-            if (history.getType().equals("read")) {
-                /* need 1.1 get read value from the current site,
-                for the case that same transaction first write and then read the same variable on the same site */
-                int value = variableMap.get(history.getVariableName()).getSiteToVariableMap().get(history.getSites().get(0)).getValue();
-                System.out.print("R(" + transaction + "," + history.getVariableName() + ") at Site " + history.getSites().get(0) + " = " + value + "\n");
-
-            }
-            else {
+            /* According to the requirement, all read prints as the program goes. even later the transaction is aborted. */
+//            if (history.getType().equals("read")) {
+//                /* need 1.1 get read value from the current site,
+//                for the case that same transaction first write and then read the same variable on the same site */
+//                int value = variableMap.get(history.getVariableName()).getSiteToVariableMap().get(history.getSites().get(0)).getValue();
+//                System.out.print("R(" + transaction + "," + history.getVariableName() + ") at Site " + history.getSites().get(0) + " = " + value + "\n");
+//
+//            }
+            if(history.getType().equals("write")) {
                 //for stdout
                 List<Integer> sites = history.getSites();
                 System.out.print("W(" + transaction + "," + history.getVariableName() + "," + history.getValue() + ") at available sites: ");
@@ -623,13 +624,24 @@ public class TransactionManager {
                 variableMap.get(variable).getSiteToVariableMap().get(targetSite).addReadLock();
 
                 //update transaction
-                Lock readLock = new Lock(variable, targetSite, "read");
+                Lock readLock = new Lock(variable, targetSite, Constants.READ_LOCK);
                 transactionMap.get(transaction).addLock(readLock);
-                int value = variableMap.get(variable).getSiteToVariableMap().get(targetSite).getValue();
+                int userReadValue = variableMap.get(variable).getSiteToVariableMap().get(targetSite).getValue();
 
                 List<Integer> targetSites = new ArrayList<>();
                 targetSites.add(targetSite);
-                addHistoryToTransaction(variable, value, targetSites, transaction, Constants.READ_LOCK);
+                //addHistoryToTransaction(variable, value, targetSites, transaction, Constants.READ_LOCK);
+
+                //have to check if same transaction has write on this variable, update the userReadValue if it has
+                for(Transaction trans : transactionMap.values()) {
+                    for(History h : trans.getTransactionHistory()) {
+                        if(h.getType().equals(Constants.WRITE_LOCK) && h.getSites().contains(targetSite) && h.getVariableName().equals(variable)) {
+                            userReadValue = h.getValue();
+                        }
+                    }
+                }
+                //read prints as the program goes
+                System.out.print("R(" + transaction + "," + variable + ") at Site " + targetSite + " = " + userReadValue + "\n");
                 addTransactionToSite(targetSites, t);
                 return true;
             }
