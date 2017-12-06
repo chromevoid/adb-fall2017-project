@@ -10,14 +10,14 @@ import java.io.IOException;
  */
 public class Application {
     public static void main(String[] args) {
-        for (int i = 1; i <= args.length; i++) {
+        for (int i = 27; i <= args.length; i++) {
             TransactionManager tm = new TransactionManager();
             String FileName = args[i - 1];
             String transactionInput = readFile(FileName);
             System.out.print("\nTest " + i);
             tm.runTest(transactionInput);
         }
-        if (args.length > 0) {
+        if (args.length == 0) {
             // standard input
             System.out.printf("Standard input: \n");
             TransactionManager tm = new TransactionManager();

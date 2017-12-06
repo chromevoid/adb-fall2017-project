@@ -188,6 +188,7 @@ public class TransactionManager {
      * @param instruction instruction to be executed
      */
     private void checkCommand(String instruction) {
+        System.out.println("Run command: " + instruction);
         String[] commandFileds = instruction.split("\\(");
         String command = commandFileds[0];
         String[] fields = commandFileds[1].replace(")", "").split(",");
