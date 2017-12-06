@@ -17,6 +17,12 @@ public class Application {
             System.out.print("\nTest " + i);
             tm.runTest(transactionInput);
         }
+        if (args.length > 0) {
+            // standard input
+            System.out.printf("Standard input: \n");
+            TransactionManager tm = new TransactionManager();
+            tm.runTest("");
+        }
     }
 
     public static String readFile(String fileName) {

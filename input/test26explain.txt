@@ -14,6 +14,8 @@ end(T2) // x2_2 = 33, x2_3 = 33, ... , x2_10 = 33
 
 beginRO(T3)
 
+recover(1)
+
 fail(2)
 
 fail(3)
@@ -32,14 +34,9 @@ fail(9)
 
 fail(10)
 
-R(T3,x2)	// All sites down. T3 should wait.
-			// wl: R(T3,x2)
-
-recover(1)
-
 R(T3,x2)	// Only site 1 is up, but site 1 doesn't have version2's x2 = 33.
         	// T3 should wait, and x2_1.canRead = false
-        	// wl: R(T3,x2), R(T3, x2)
+        	// wl: R(T3,x2)
 
 begin(T4)
 
@@ -49,12 +46,11 @@ end(T4)		// x2_1 = 44, and x2_1.canRead = true
 
 R(T3,x2)	// Only site 1 is up, but site 1 doesn't have version2's x2 = 33. 
         	// T3 should wait, and x2_1.canRead = true
-        	// wl: R(T3,x2), R(T3, x2), R(T3, x2)
+        	// wl: R(T3,x2), R(T3, x2)
 
 recover(2)	// New site 1 and site 2 are up, and site 2 has version2's x2 = 33.
 
 end(T3)		// T3 reads x2 from version2 at site 2, x2 = 33.
-			// T3 reads x2 from version2 at site 2, x2 = 33.
 			// T3 reads x2 from version2 at site 2, x2 = 33.
 			// wl: empty
 
