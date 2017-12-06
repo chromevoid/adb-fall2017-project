@@ -594,17 +594,17 @@ public class TransactionManager {
             then T can't get read lock on x
              */
             int upSites = 0;
-            int upAndCanNotReadSites = 0;
+            int upButCanNotReadSites = 0;
             for (Map.Entry<Integer, VariableInfo> entry : variableMap.get(variable).getSiteToVariableMap().entrySet()) {
                 int site = entry.getKey();
                 if (siteMap.get(site).isAvailable()) {
                     upSites++;
                     if (!entry.getValue().isCanRead()) {
-                        upAndCanNotReadSites++;
+                        upButCanNotReadSites++;
                     }
                 }
             }
-            if (upSites == upAndCanNotReadSites) {
+            if (upSites == upButCanNotReadSites) {
                 getLock = false;
             }
 
