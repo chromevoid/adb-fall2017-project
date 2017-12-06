@@ -155,6 +155,7 @@ public class TransactionManager {
             // when each tick starts
             // cycle detection
             if (waitList.size() > 1) {
+                System.out.println("Run cycle detection:");
                 List<String> transactionsInCycle = cycleDetection(waitList);
                 if (transactionsInCycle.size() != 0) {
                     //abort the youngest transaction
@@ -342,6 +343,13 @@ public class TransactionManager {
                 }
             }
         }
+
+        // print waitsForGraph
+        for (Map.Entry<String, List<String>> entry : waitsForGraph.entrySet()) {
+            System.out.println(entry.getKey() + " is waiting for :" );
+            entry.getValue().forEach(System.out::println);
+        }
+
         //topological sort detect cycle
         Queue<String> queue = new LinkedList<>();
 

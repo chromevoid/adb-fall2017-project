@@ -10,12 +10,5 @@ recover(1)
 begin(T4)
 W(T4,x2,44)
 end(T4)
-R(T3,x2) // READ FROM SITE 2
+R(T3,x2)
 end(T3)
-
-
-for (each site in version.siteRecorders) {
-	if (theSitesThatIsUp.conatins(site)) {
-	   print "T3 read from " + site + " version:" + version + "value: " +"value";
-	}
-}
