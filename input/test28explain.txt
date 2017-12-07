@@ -15,7 +15,7 @@ end(T3)
 
 
 for (each site in version.siteRecorders) {
-	if (theSitesThatIsUp.conatins(site)) {
+	if (theSitesThatIsUp.contains(site)) {
 	   print "T3 read from " + site + " version:" + version + "value: " +"value";
 	}
 }
