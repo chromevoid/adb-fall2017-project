@@ -46,17 +46,28 @@ public class TransactionManager {
      * @param latestVersionNumber current version number
      */
     private void createVersion(int latestVersionNumber) {
-        Map<String, Integer> variables = new HashMap<>();
+        Map<String, Integer> variableToValue = new HashMap<>();
+        Map<String, List<Integer>> variableToSite = new HashMap<>();
         for (int i = 1; i <= Constants.VARIABLE_AMOUNT; i++) {
             int value = -1;
-            Map<Integer, VariableInfo> values = variableMap.get("x" + i).getSiteToVariableMap();
-            for (VariableInfo info : values.values()) {
-                value = info.getValue();
+            Map<Integer, VariableInfo> siteToVariableMap = variableMap.get("x" + i).getSiteToVariableMap();
+            for (Map.Entry<Integer, VariableInfo> entry : siteToVariableMap.entrySet()) {
+                boolean isUpAndCanRead = siteMap.get(entry.getKey()).isAvailable() && entry.getValue().isCanRead();
+                if(isUpAndCanRead) {
+                    value = entry.getValue().getValue();
+                    String variableName = "x" + i;
+                    variableToValue.put(variableName, value);
+                    if(variableToSite.get(variableName) == null) {
+                        List<Integer> list = new ArrayList<>();
+                        variableToSite.put(variableName, list);
+                    }
+                    variableToSite.get(variableName).add(entry.getKey());
+                }
             }
-            String variableName = "x" + i;
-            variables.put(variableName, value);
+
         }
-        Version version = new Version(latestVersionNumber, variables);
+
+        Version version = new Version(latestVersionNumber, variableToValue, variableToSite);
         multiVersion.put(latestVersionNumber, version);
     }
 
@@ -123,11 +134,11 @@ public class TransactionManager {
 
             /* step 1: check commands in waitinglist */
             for (String waitingCommand : waitList) {
-                checkCommand(waitingCommand);
+                checkCommand(waitingCommand.replaceAll("\\s+",""));
             }
 
             /* step 2: check commands in the new tick */
-            checkCommand(instruction);
+            checkCommand(instruction.replaceAll("\\s+",""));
             //update waitList for next tick
             waitList = new ArrayList<>(nextWaitList);
             nextWaitList = new ArrayList<>();
@@ -149,7 +160,7 @@ public class TransactionManager {
         String[] commandFileds = instruction.split("\\(");
         String command = commandFileds[0];
         String[] fields = commandFileds[1].replace(")", "").split(",");
-        if (command.equals("R")) {
+        if (command.toLowerCase().equals("r")) {
             String transaction = fields[0].trim();
             String variable = fields[1].trim();
             //if current read can't be executed
@@ -157,7 +168,7 @@ public class TransactionManager {
                 nextWaitList.add(instruction);
             }
         }
-        else if (command.equals("W")) {
+        else if (command.toLowerCase().equals("w")) {
             String transaction = fields[0].trim();
             String variable = fields[1].trim();
             String value = fields[2].trim();
@@ -166,28 +177,28 @@ public class TransactionManager {
                 nextWaitList.add(instruction);
             }
         }
-        else if (command.equals("recover")) {
+        else if (command.toLowerCase().equals("recover")) {
             String site = fields[0].trim();
             recoverSite(site);
         }
-        else if (command.equals("fail")) {
+        else if (command.toLowerCase().equals("fail")) {
             String site = fields[0].trim();
             failSite(site);
         }
-        else if (command.equals("end")) {
+        else if (command.toLowerCase().equals("end")) {
             String transaction = fields[0].trim();
             endTransaction(transaction);
         }
-        else if (command.equals("begin")) {
+        else if (command.toLowerCase().equals("begin")) {
             String transaction = fields[0].trim();
             beginTransaction(transaction);
 
         }
-        else if (command.equals("beginRO")) {
+        else if (command.toLowerCase().equals("beginro")) {
             String transaction = fields[0].trim();
             beginReadOnlyTransaction(instruction, transaction);
         }
-        else if (command.equals("dump")) {
+        else if (command.toLowerCase().equals("dump")) {
             //dump()
             if (instruction.trim().equals("dump()")) {
                 db.print();
@@ -271,8 +282,8 @@ public class TransactionManager {
         for (int i = 0; i < waitList.size(); i++) {
             // t is the transaction in the command
             // v is the variable in the command
-            String t = waitList.get(i).split("\\(")[1].split(",")[0];
-            String v = waitList.get(i).split("\\(")[1].split(",")[1];
+            String t = waitList.get(i).split("\\(")[1].trim().split(",")[0].trim();
+            String v = waitList.get(i).split("\\(")[1].trim().split(",")[1].trim();
             // add the transaction in the waitList into the in-degreeMap with in-degree = 0
             inDegreeMap.putIfAbsent(t, 0);
             for (Transaction transaction : transactionMap.values()) {
@@ -549,10 +560,22 @@ public class TransactionManager {
                 //can't execute read, have to wait for the site up
                 return false;
             }
-            int value = version.getVariables().get(variable);
+            // if the available site's version is not the latest (for the time of read-only transaction starts, the wait)
+            List<Integer> sites = multiVersion.get(t.getVersionNumber()).getVariableToSite().get(variable);
+            int readFromSite = -1;
+            for(Integer site : sites) {
+                if(siteMap.get(site).isAvailable()) {
+                    readFromSite = site;
+                }
+            }
+            if(readFromSite == -1) {
+                return false;
+            }
+
+            int value = version.getVariableToValue().get(variable);
 
             //read-only transaction could print out directly
-            System.out.println(transaction + " reads version " + t.getVersionNumber() + "'s " + variable + ":" + value);
+            System.out.println(transaction + " reads version " + t.getVersionNumber() + "'s " + variable + ":" + value + " from site: " + readFromSite);
             return true;
         }
         //if T is not a read-only transaction, t.versionNumber == -1

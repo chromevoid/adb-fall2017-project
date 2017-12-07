@@ -14,7 +14,7 @@ According to the requirement, there are two kinds of transactions.
 
     - It uses multi-version.
     - It only reads from the copy version when the transaction starts
-    - If there are no available copies for read (such as all sites contains variables are down), then the operation will wait
+    - If there are no available copies for read (such as all sites contains variableToValue are down), then the operation will wait
 
 - Read-Write Transaction
 

@@ -113,7 +113,7 @@ function R(string T, string x) {
     choose an available site;
     if (an site is available) {
       Version versionT = multiVersion[T.versionNumber];
-      History h = new History("read", sites[{available site}], x, versionT.variables[x]);
+      History h = new History("read", sites[{available site}], x, versionT.variableToValue[x]);
       T.history.push(h);
     }
     else {
@@ -318,7 +318,7 @@ function end(T) {
 
 function fail(site) {
   Site s = siteMap[site];
-  for (each x in variables) {
+  for (each x in variableToValue) {
     set canRead to false;
     set readLock to 0;
     set writeLock to false;
@@ -332,7 +332,7 @@ function fail(site) {
 
 function recover(site) {
   Site s = siteMap[site];
-  for (each x in variables) {
+  for (each x in variableToValue) {
     if (x is odd number) {
       canRead = true;
     }

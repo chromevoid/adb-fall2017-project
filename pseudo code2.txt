@@ -43,19 +43,19 @@ class Site {
   // Todo!!!! add a touch table as a new member. Use set
   member:
     int siteNumber;
-    array variables[];
+    array variableToValue[];
     bool available = True;
     array involvedTransactions;
 
   function init(n, v[]) {
     siteNumber = n;
-    variables[] = v[];
+    variableToValue[] = v[];
     // e.g.
     // s2[] = [x1, x11, x2, x4, x6, x8, x10];
   }
   
   function print() {
-    for (each x in variables[]) {
+    for (each x in variableToValue[]) {
       print ("x" + x.variableNumber + "." + siteNumber +
              " = " + x.values[siteNumber][0]);
       // values[siteNumber] is a pair (value, canRead)
@@ -97,14 +97,14 @@ class Version {
   member:
     // the number of the version
     int versionNumber;
-    // the value of the variables in this version
-    hashmap variables[];
+    // the value of the variableToValue in this version
+    hashmap variableToValue[];
     // read-only transactions that are using this version
     array involvedTransaction[];
   
   function init(v[]) {
     versionNumber = latesetVersionNumber;
-    variables[] = v[];
+    variableToValue[] = v[];
   }
 }
 
@@ -140,7 +140,7 @@ class Transaction {
 }
 
 function runTest(file) {    
-  create variables x1~x20;
+  create variableToValue x1~x20;
   create site s1~s10;
   create variableMap = { 'x1': x1, 'x2': x2, ... };
   create siteMap = { 's1': s1, 's2': s2, ... }
