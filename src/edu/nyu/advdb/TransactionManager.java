@@ -107,7 +107,7 @@ public class TransactionManager {
             variableMap.put(variableName, v);
             //if variable is even, it exists on all sits
             if (i % 2 == 0) {
-                for (int j = 1; j < Constants.SITE_AMOUNT; j++) {
+                for (int j = 1; j <= Constants.SITE_AMOUNT; j++) {
                     siteMap.get(j).addVariable(v);
                 }
             }
