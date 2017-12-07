@@ -50,23 +50,31 @@ public class TransactionManager {
         Map<String, List<Integer>> variableToSite = new HashMap<>();
         for (int i = 1; i <= Constants.VARIABLE_AMOUNT; i++) {
             int value = -1;
+            // siteToVariableMap: Map<siteNumber, variableInfo(value, canRead, readLock, writeLock)>
             Map<Integer, VariableInfo> siteToVariableMap = variableMap.get("x" + i).getSiteToVariableMap();
+            // entry: siteNumber
+            // for (each site that has xi)
             for (Map.Entry<Integer, VariableInfo> entry : siteToVariableMap.entrySet()) {
+                // site is available &&
+                // entry.getValue() is a type VariableInfo object
+                // entry.getValue().isCanRead() returns if we can read the variable on this site
                 boolean isUpAndCanRead = siteMap.get(entry.getKey()).isAvailable() && entry.getValue().isCanRead();
                 if(isUpAndCanRead) {
                     value = entry.getValue().getValue();
                     String variableName = "x" + i;
+                    // the next statement is duplicated for variables with replication
+                    // BUT: since put method also updates existing key-value pair,
+                    //      and the value for variables with replication is consistent on each up adn canRead site
+                    //      therefore, we can just execute the next statement without any other operations
                     variableToValue.put(variableName, value);
-                    if(variableToSite.get(variableName) == null) {
-                        List<Integer> list = new ArrayList<>();
-                        variableToSite.put(variableName, list);
-                    }
+                    // this site has the xi of the latest version,
+                    // so add this site to the version site recorder
+                    variableToSite.putIfAbsent(variableName, new ArrayList<>());
                     variableToSite.get(variableName).add(entry.getKey());
                 }
             }
 
         }
-
         Version version = new Version(latestVersionNumber, variableToValue, variableToSite);
         multiVersion.put(latestVersionNumber, version);
     }
