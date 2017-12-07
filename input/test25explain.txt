@@ -6,10 +6,16 @@ begin(T2)
 W(T2,x2,33)
 end(T2)
 beginRO(T3)
-R(T3,x2) // T3 reads x2 from verstion2 at site 2: 33
 recover(1)
-begin(T4)
-W(T4,x2,44)
-end(T4)
-R(T3,x2) // T3 reads x2 from verstion2 at site 2: 33; however, x2_2 in now version3, and x2_2 = 44.
+fail(2)
+fail(3)
+fail(4)
+fail(5)
+fail(6)
+fail(7)
+fail(8)
+fail(9)
+fail(10)
+R(T3,x2) // wait
+recover(2) // T3 reads x2 from site2, x2 = 33
 end(T3)

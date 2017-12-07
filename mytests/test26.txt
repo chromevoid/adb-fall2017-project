@@ -16,6 +16,9 @@ fail(7)
 fail(8)
 fail(9)
 fail(10)
-R(T3,x2)
-recover(2)
+begin(T4)
+W(T4,x2,44)
+end(T4)
+R(T3,x2) // wait list
+recover(2) // T3 reads x2 from site 2, x2 = 33
 end(T3)
