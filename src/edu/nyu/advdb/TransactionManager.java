@@ -117,6 +117,48 @@ public class TransactionManager {
      */
     void runTest(String input) {
         System.out.println("\nNew Test starts: " + "\n");
+        if (input.equals("")) {
+            // standard input
+            Scanner scan = new Scanner(System.in);
+            String inputLine = "start";
+            while(!inputLine.equals("exit")) {
+                if (inputLine.equals("start")) {
+                    System.out.println("Input: ");
+                    inputLine = scan.nextLine();
+                }
+                System.out.println("!!! New time step, Input line is： " + inputLine);
+                // when each tick starts
+                // cycle detection
+                if (waitList.size() > 1) {
+                    List<String> transactionsInCycle = cycleDetection(waitList);
+                    if (transactionsInCycle.size() != 0) {
+                        //abort the youngest transaction
+                        Transaction youngest = transactionMap.get(getYoungestTransaction(transactionsInCycle));
+                        abort(youngest, "youngest in deadlock ");
+                    }
+                }
+
+                /* step 1: check commands in waitinglist */
+                for (String waitingCommand : waitList) {
+                    checkCommand(waitingCommand);
+                }
+
+                /* step 2: check commands in the new tick */
+                checkCommand(inputLine);
+                //update waitList for next tick
+                waitList = new ArrayList<>(nextWaitList);
+                nextWaitList = new ArrayList<>();
+                System.out.println("== WaitList:");
+                for (String waitingCommand : waitList) {
+                    System.out.println("\t" + waitingCommand);
+                }
+                System.out.println("\n");
+                System.out.println("Input: ");
+                inputLine = scan.nextLine();
+            }
+            return;
+        }
+
         String[] instructions = input.split("\n");
 
         for (String instruction : instructions) {
@@ -124,6 +166,7 @@ public class TransactionManager {
             // when each tick starts
             // cycle detection
             if (waitList.size() > 1) {
+                System.out.println("Run cycle detection:");
                 List<String> transactionsInCycle = cycleDetection(waitList);
                 if (transactionsInCycle.size() != 0) {
                     //abort the youngest transaction
@@ -157,6 +200,7 @@ public class TransactionManager {
      * @param instruction instruction to be executed
      */
     private void checkCommand(String instruction) {
+        System.out.println("Run command: " + instruction);
         String[] commandFileds = instruction.split("\\(");
         String command = commandFileds[0];
         String[] fields = commandFileds[1].replace(")", "").split(",");
@@ -310,6 +354,13 @@ public class TransactionManager {
                 }
             }
         }
+
+        // print waitsForGraph
+        for (Map.Entry<String, List<String>> entry : waitsForGraph.entrySet()) {
+            System.out.println(entry.getKey() + " is waiting for :" );
+            entry.getValue().forEach(System.out::println);
+        }
+
         //topological sort detect cycle
         Queue<String> queue = new LinkedList<>();
 
