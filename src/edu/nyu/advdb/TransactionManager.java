@@ -300,7 +300,7 @@ public class TransactionManager {
         }
 
         transactionMap.remove(transaction.getTransactionName());
-        transactionAge.remove(transaction);
+        transactionAge.remove(transaction.getTransactionName());
 
         /* need 2: update waitList commands to remove transaction */
         List<String> waitListAfterAbort = new ArrayList<>();
@@ -611,7 +611,7 @@ public class TransactionManager {
                 //can't execute read, have to wait for the site up
                 return false;
             }
-            // if the available site's version is not the latest (for the time of read-only transaction starts, the wait)
+            // if the available site's version is not the latest (for the time of read-only transaction starts, then wait)
             List<Integer> sites = multiVersion.get(t.getVersionNumber()).getVariableToSite().get(variable);
             int readFromSite = -1;
             for(Integer site : sites) {
@@ -637,7 +637,7 @@ public class TransactionManager {
             then T can't get read lock on x
             */
             for (String waitCommand : waitList) {
-                boolean isOlder = transactionAge.indexOf(waitCommand) < transactionAge.indexOf(transaction) ? true : false;
+//                boolean isOlder = transactionAge.indexOf(waitCommand) < transactionAge.indexOf(transaction);
                 if (waitCommand.contains(variable) && waitCommand.contains(Constants.WRITE_OPERATION) && !waitCommand.contains(transaction)) {
                     getLock = false;
                     break;
