@@ -625,6 +625,7 @@ public class TransactionManager {
             for(Integer site : sites) {
                 if(siteMap.get(site).isAvailable()) {
                     readFromSite = site;
+                    break;
                 }
             }
             if(readFromSite == -1) {
