@@ -146,17 +146,17 @@ public class History {
 
 You can use standard input or input files to test the program.
 
-Compile all java files.
+Under src folder, compile all java files.
 ```
-$ javac *.java
+$ javac edu/nyu/advdb/*.java
 ```
 Run the program using standard input.
 ```
-$ java Application
+$ java edu.nyu.advdb.Application
 ```
 Run the program with input files.
 ```
-$ java Application ./input/test1.txt ./input/test2.txt ...
+$ java edu.nyu.advdb.Application ./input/test1.txt ./input/test2.txt ...
 ```
 
 
