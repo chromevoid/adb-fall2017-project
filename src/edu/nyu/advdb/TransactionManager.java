@@ -700,7 +700,7 @@ public class TransactionManager {
              *  then ignore scenario 1~4, and T can read lock the variable.
              *
              *  Reason to ignore scenario 1:
-             *    We just don't care about the waitList since T already locks x all on available sites.
+             *    We just don't care about the waitList since T already locks x on all available sites.
              *
              *  Reason to ignore scenario 2:
              *    Only one transaction can hold the write lock on x.
