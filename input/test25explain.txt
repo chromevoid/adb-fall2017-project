@@ -1,9 +1,9 @@
 begin(T1)
 W(T1,x2,22)
-end(T1)
+end(T1) // x2_1 = 22, x2_2 = 22, ... , x2_10 = 22
 fail(1)
 begin(T2)
-W(T2,x2,33)
+W(T2,x2,33) // x2_2 = 33, x2_2 = 3, ... , x2_10 = 33
 end(T2)
 beginRO(T3)
 recover(1)

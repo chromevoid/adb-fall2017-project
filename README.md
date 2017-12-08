@@ -144,10 +144,18 @@ public class History {
 ```
 ## Running the tests
 
-Compile all java files and feed the program with file input (could be multiple)
+You can use standard input or input files to test the program.
 
+Compile all java files.
 ```
 $ javac *.java
+```
+Run the program using standard input.
+```
+$ java Application
+```
+Run the program with input files.
+```
 $ java Application ./input/test1.txt ./input/test2.txt ...
 ```
 
