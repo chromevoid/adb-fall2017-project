@@ -635,7 +635,7 @@ public class TransactionManager {
             int value = version.getVariableToValue().get(variable);
 
             //read-only transaction could print out directly
-            System.out.println(transaction + " reads version " + t.getVersionNumber() + "'s " + variable + ":" + value + " from site: " + readFromSite);
+            System.out.println(transaction + " reads version " + t.getVersionNumber() + "'s " + variable + " = " + value + " from site " + readFromSite);
             return true;
         }
         //if T is not a read-only transaction, t.versionNumber == -1
