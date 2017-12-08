@@ -368,10 +368,10 @@ public class TransactionManager {
         }
 
         // print waitsForGraph
-        for (Map.Entry<String, List<String>> entry : waitsForGraph.entrySet()) {
-            System.out.println(entry.getKey() + " is waiting for :" );
-            entry.getValue().forEach(System.out::println);
-        }
+//        for (Map.Entry<String, List<String>> entry : waitsForGraph.entrySet()) {
+//            System.out.println(entry.getKey() + " is waiting for :" );
+//            entry.getValue().forEach(System.out::println);
+//        }
 
         //topological sort detect cycle
         Queue<String> queue = new LinkedList<>();
@@ -510,7 +510,8 @@ public class TransactionManager {
         for (Variable v : s.getVariables()) {
             VariableInfo variableOnSite = v.getSiteToVariableMap().get(siteNumber);
             variableOnSite.setWriteLock(false);
-            variableOnSite.minusReadLock();
+            //will do this in abort transaction
+            //variableOnSite.minusReadLock();
             variableOnSite.setCanRead(false);
         }
         //abort transaction which has lock on this site.
