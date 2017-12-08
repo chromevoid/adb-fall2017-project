@@ -605,18 +605,18 @@ public class TransactionManager {
      * @return true - read command is executed; false - read command can't be executed right now.
      */
     private boolean read(String transaction, String variable) {
-        // if the transaction already died, then skip this command, return true
+        // if the transaction is already dead, then skip this command, return true
         if (isTransactionDead(transaction)) {
             return true;
         }
 
         Transaction t = transactionMap.get(transaction);
-        //if T is read-only transaction
+        // if T is read-only transaction
         if (t.getVersionNumber() != Constants.READ_WRITE_TRANSACTION_VERSION) {
             Version version = multiVersion.get(t.getVersionNumber());
             // if there is no available site for reading
             if (isNoUpSiteForCopy(variable)) {
-                //can't execute read, have to wait for the site up
+                // can't execute read, the transaction has to wait for the site up
                 return false;
             }
             // if the available site's version is not the latest (for the time of read-only transaction starts, then wait)
@@ -634,17 +634,18 @@ public class TransactionManager {
 
             int value = version.getVariableToValue().get(variable);
 
-            //read-only transaction could print out directly
+            // read-only transactions could print out directly
             System.out.println(transaction + " reads version " + t.getVersionNumber() + "'s " + variable + " = " + value + " from site " + readFromSite);
             return true;
         }
-        //if T is not a read-only transaction, t.versionNumber == -1
+        // if T is not a read-only transaction, i.e. T.versionNumber == -1
         else {
             boolean getLock = true;
 
-            /* scenario 1: if a transaction is older than T (not T) requires an write lock on x in the waitList,
-            then T can't get read lock on x
-            */
+            /* scenario 1:
+             *   if a transaction in the waitList comes before T requires a write lock on x,
+             *   then T can't get read lock on x (see exceptions in scenario 2 line 668)
+             */
             for (String waitCommand : waitList) {
 //                boolean isOlder = transactionAge.indexOf(waitCommand) < transactionAge.indexOf(transaction);
                 if (waitCommand.contains(variable) && waitCommand.contains(Constants.WRITE_OPERATION) && !waitCommand.contains(transaction)) {
@@ -653,28 +654,31 @@ public class TransactionManager {
                 }
             }
 
-            /* scenario 2: if x already has write lock from a transaction (not T),
-            then T can't get read lock on x
-            */
+            /* scenario 2:
+             *   if x already has write lock from a transaction (not T itself),
+             *   then T can't get read lock on x
+             */
             for (Transaction trans : transactionMap.values()) {
-                //if one variable at one site is already write locked by other transaction,
-                //then can't read lock
                 for (Lock lock : trans.getLocks()) {
+                    // if another transaction holds the write lock on the variable
+                    // then T can't read lock the variable
                     if (lock.getVariable().equals(variable) && !(trans.getTransactionName().equals(transaction)) && lock.getType().equals(Constants.WRITE_LOCK)) {
                         getLock = false;
                     }
                 }
             }
 
-            /* scenario 3: if every site containing x is down,
-            then T can't get read lock on x
+            /* scenario 3:
+             *   If every site containing x is down,
+             *   then T can't get the read lock on x.
              */
             if (isNoUpSiteForCopy(variable)) {
                 getLock = false;
             }
 
-            /* scenario 4: if on every available site, x.canRead = false,
-            then T can't get read lock on x
+            /* scenario 4:
+             *   If, on every available site, x.canRead = false,
+             *   then T can't get read lock on x.
              */
             int upSites = 0;
             int upButCanNotReadSites = 0;
@@ -689,6 +693,34 @@ public class TransactionManager {
             }
             if (upSites == upButCanNotReadSites) {
                 getLock = false;
+            }
+
+            /* scenario 5:
+             *  If T itself holds the write lock on the variable,
+             *  then ignore scenario 1~4, and T can read lock the variable.
+             *
+             *  Reason to ignore scenario 1:
+             *    We just don't care about the waitList since T already locks x all on available sites.
+             *
+             *  Reason to ignore scenario 2:
+             *    Only one transaction can hold the write lock on x.
+             *    If any other transaction already has the write lock on x,
+             *    then scenario 5 won't happen.
+             *
+             *  Reason to ignore scenario 3:
+             *    If T already has the write lock, then, at the time T acquires the write lock,
+             *    some sites that containing x must be up.
+             *    Now, since every site containing x is down, T must already be aborted.
+             *    Therefore, this scenario doesn't apply to the condition that T already has the write lock.
+             *
+             *  Reason to ignore scenario 4:
+             *    If T already has the write lock on x (i.e. at least one site containing x is up),
+             *    then T can read the value from the v of W(T,x,v).
+             */
+            for (Lock lock : transactionMap.get(transaction).getLocks()) {
+                if (lock.getVariable().equals(variable) && lock.getType().equals(Constants.WRITE_LOCK)) {
+                    getLock = true;
+                }
             }
 
             if (getLock) {
@@ -713,7 +745,7 @@ public class TransactionManager {
 
                 List<Integer> targetSites = new ArrayList<>();
                 targetSites.add(targetSite);
-                //addHistoryToTransaction(variable, value, targetSites, transaction, Constants.READ_LOCK);
+//                addHistoryToTransaction(variable, value, targetSites, transaction, Constants.READ_LOCK);
 
                 //have to check if same transaction has write on this variable, update the userReadValue if it has
                 for(Transaction trans : transactionMap.values()) {
