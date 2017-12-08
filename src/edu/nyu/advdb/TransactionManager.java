@@ -295,10 +295,14 @@ public class TransactionManager {
                 /* need 1.1 update the variable on that site -> release locks */
                 if (history.getType().equals(Constants.WRITE_LOCK)) {
                     //System.out.println("releasing write lock on " + history.variableName + " " + site);
+                    // writeLock in class VariableInfo is not really used in our program
+                    // therefore, this statement is actually useless
                     v.getSiteToVariableMap().get(site).setWriteLock(false);
 
                 }
                 else {
+                    // readLock in class VariableInfo is not really used in our program
+                    // therefore, this statement is actually useless
                     v.getSiteToVariableMap().get(site).clearReadLock();
                 }
 
@@ -715,7 +719,7 @@ public class TransactionManager {
              *
              *  Reason to ignore scenario 4:
              *    If T already has the write lock on x (i.e. at least one site containing x is up),
-             *    then T can read the value from the v of W(T,x,v).
+             *    then T can read the value from the v of W(T,x,v), i.e. T doesn't need to care about canRead.
              */
             for (Lock lock : transactionMap.get(transaction).getLocks()) {
                 if (lock.getVariable().equals(variable) && lock.getType().equals(Constants.WRITE_LOCK)) {
@@ -724,7 +728,26 @@ public class TransactionManager {
             }
 
             if (getLock) {
-                //read lock on one site, we use the smallest index available site
+                // If T already has the write lock on x,
+                // then T reads from it's own latest write command on x.
+                // Choose the site with the smallest index from the sites that the write command writes to.
+                for (Lock lock : transactionMap.get(transaction).getLocks()) {
+                    if (lock.getVariable().equals(variable) && lock.getType().equals(Constants.WRITE_LOCK)) {
+                        for (History h : transactionMap.get(transaction).getTransactionHistory()) {
+                            if (h.getType().equals(Constants.WRITE_LOCK) && h.getVariableName().equals(variable)) {
+                                int userReadValueFromPreviousWrite = h.getValue();
+                                System.out.print("R(" + transaction + "," + variable + ") from it's own Write commands at Site " + h.getSites().get(0) + " = " + userReadValueFromPreviousWrite + "\n");
+                                // we don't need to addTransactionToSite here
+                                // because in former Write commands of T
+                                // we already put T into involvedTransactionsRecorder of the site
+                                // therefore, if the site fails, this T will be successfully aborted.
+                                return true;
+                            }
+                        }
+                    }
+                }
+
+                // read lock on one site, we use the smallest index available site
                 List<Integer> sites = new ArrayList<>(variableMap.get(variable).getSiteToVariableMap().keySet());
                 Collections.sort(sites);
                 int targetSite = -1;
@@ -735,10 +758,15 @@ public class TransactionManager {
                         break;
                     }
                 }
-                //update variableInfo in Variable
+                // Update variableInfo in Variable:
+                //   readLock in class VariableInfo is not really used in our program.
+                //   Therefore, this statement is actually useless.
                 variableMap.get(variable).getSiteToVariableMap().get(targetSite).addReadLock();
 
-                //update transaction
+                // update transaction
+                // If T already has the write lock on x, then T holds all the x.
+                // Therefore, we don't really need to add readLock info into transaction's locks recorder:
+                // no other transaction can read this variable anyway.
                 Lock readLock = new Lock(variable, targetSite, Constants.READ_LOCK);
                 transactionMap.get(transaction).addLock(readLock);
                 int userReadValue = variableMap.get(variable).getSiteToVariableMap().get(targetSite).getValue();
@@ -747,14 +775,6 @@ public class TransactionManager {
                 targetSites.add(targetSite);
 //                addHistoryToTransaction(variable, value, targetSites, transaction, Constants.READ_LOCK);
 
-                //have to check if same transaction has write on this variable, update the userReadValue if it has
-                for(Transaction trans : transactionMap.values()) {
-                    for(History h : trans.getTransactionHistory()) {
-                        if(h.getType().equals(Constants.WRITE_LOCK) && h.getSites().contains(targetSite) && h.getVariableName().equals(variable)) {
-                            userReadValue = h.getValue();
-                        }
-                    }
-                }
                 //read prints as the program goes
                 System.out.print("R(" + transaction + "," + variable + ") at Site " + targetSite + " = " + userReadValue + "\n");
                 addTransactionToSite(targetSites, t);

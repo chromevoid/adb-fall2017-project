@@ -12,7 +12,7 @@ begin(T4)
 R(T3,x1)
 R(T4,x1)
 W(T3,x1,3)
-W(T4,x1,4) // deadlock
+W(T4,x1,4) // deadlock, abort T4 because T4 is younger than T3
 end(T3)
 end(T4)
 

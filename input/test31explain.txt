@@ -19,7 +19,8 @@ fail(9)
 recover(9)
 fail(10)
 recover(10)
-R(T1,x2) // waitlist
-W(T1,x2,1) // Update x2 on every site, but the value hasn't been committed yet.
-           // Now, execute R(T1,x2) in the waitlist
+W(T1,x2,1)	// Update x2 on every site
+			// but the value 1 hasn't been committed yet.
+R(T1,x2)	// R(T1,x2) reads x2 = 1
+			// eventhough all the canRead = false
 end(T1)

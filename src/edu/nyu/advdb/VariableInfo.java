@@ -7,6 +7,8 @@ package edu.nyu.advdb;
 public class VariableInfo {
     private int value;
     private boolean canRead;
+    // readLock and writeLock are not really used in our program
+    // we always check locks from transaction's locks recorder
     private int readLock;
     private boolean writeLock;
 
