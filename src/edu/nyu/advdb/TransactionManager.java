@@ -303,7 +303,7 @@ public class TransactionManager {
                 else {
                     // readLock in class VariableInfo is not really used in our program
                     // therefore, this statement is actually useless
-                    v.getSiteToVariableMap().get(site).clearReadLock();
+                    v.getSiteToVariableMap().get(site).minusReadLock();
                 }
 
                 /* need 1.2 update site's involved transaction. */
@@ -510,7 +510,7 @@ public class TransactionManager {
         for (Variable v : s.getVariables()) {
             VariableInfo variableOnSite = v.getSiteToVariableMap().get(siteNumber);
             variableOnSite.setWriteLock(false);
-            variableOnSite.clearReadLock();
+            variableOnSite.minusReadLock();
             variableOnSite.setCanRead(false);
         }
         //abort transaction which has lock on this site.
@@ -737,10 +737,16 @@ public class TransactionManager {
                             if (h.getType().equals(Constants.WRITE_LOCK) && h.getVariableName().equals(variable)) {
                                 int userReadValueFromPreviousWrite = h.getValue();
                                 System.out.print("R(" + transaction + "," + variable + ") from it's own Write commands at Site " + h.getSites().get(0) + " = " + userReadValueFromPreviousWrite + "\n");
+                                // readLock in class VariableInfo is not really used in our program.
+                                // Therefore, this statement is actually useless.
+                                variableMap.get(variable).getSiteToVariableMap().get(h.getSites().get(0)).addReadLock();
                                 // we don't need to addTransactionToSite here
                                 // because in former Write commands of T
                                 // we already put T into involvedTransactionsRecorder of the site
                                 // therefore, if the site fails, this T will be successfully aborted.
+                                // BUT I add it anyway...
+                                Lock readLock = new Lock(variable, h.getSites().get(0), Constants.READ_LOCK);
+                                transactionMap.get(transaction).addLock(readLock);
                                 return true;
                             }
                         }
@@ -764,9 +770,6 @@ public class TransactionManager {
                 variableMap.get(variable).getSiteToVariableMap().get(targetSite).addReadLock();
 
                 // update transaction
-                // If T already has the write lock on x, then T holds all the x.
-                // Therefore, we don't really need to add readLock info into transaction's locks recorder:
-                // no other transaction can read this variable anyway.
                 Lock readLock = new Lock(variable, targetSite, Constants.READ_LOCK);
                 transactionMap.get(transaction).addLock(readLock);
                 int userReadValue = variableMap.get(variable).getSiteToVariableMap().get(targetSite).getValue();

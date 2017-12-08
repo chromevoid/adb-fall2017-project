@@ -27,8 +27,8 @@ public class VariableInfo {
         this.canRead = canRead;
     }
 
-    public void clearReadLock() {
-        this.readLock = 0;
+    public void minusReadLock() {
+        this.readLock--;
     }
 
     public void addReadLock() {
