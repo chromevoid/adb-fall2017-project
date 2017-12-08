@@ -156,7 +156,7 @@ $ java edu.nyu.advdb.Application
 ```
 Run the program with input files.
 ```
-$ java edu.nyu.advdb.Application ./input/test1.txt ./input/test2.txt ...
+$ java edu.nyu.advdb.Application ../input/test1.txt ../input/test2.txt ...
 ```
 
 
