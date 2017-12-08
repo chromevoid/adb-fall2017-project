@@ -174,7 +174,7 @@ public class TransactionManager {
             // when each tick starts
             // cycle detection
             if (waitList.size() > 1) {
-                System.out.println("Run cycle detection:");
+//                System.out.println("Run cycle detection:");
                 List<String> transactionsInCycle = cycleDetection(waitList);
                 if (transactionsInCycle.size() != 0) {
                     //abort the youngest transaction
