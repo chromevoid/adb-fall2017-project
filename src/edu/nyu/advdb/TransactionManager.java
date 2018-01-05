@@ -134,6 +134,8 @@ public class TransactionManager {
                     System.out.println("Input: ");
                     inputLine = scan.nextLine();
                 }
+                if (inputLine.equals("exit"))
+                    return;
                 System.out.println("!!! New time step, Input line is： " + inputLine);
                 // when each tick starts
                 // cycle detection
@@ -359,9 +361,11 @@ public class TransactionManager {
                             inDegreeMap.put(t, 0);
                         }
                         // t waits for transaction
-                        waitsForGraph.get(t).add(transaction.getTransactionName());
-                        // update the pointsToTransaction's in-degree: add by 1
-                        inDegreeMap.put(transaction.getTransactionName(), inDegreeMap.getOrDefault(transaction.getTransactionName(), 0) + 1);
+                        if(!t.equals(transaction.getTransactionName())){
+                            waitsForGraph.get(t).add(transaction.getTransactionName());
+                            // update the pointsToTransaction's in-degree: add by 1
+                            inDegreeMap.put(transaction.getTransactionName(), inDegreeMap.getOrDefault(transaction.getTransactionName(), 0) + 1);
+                        }
                     }
                 }
             }
