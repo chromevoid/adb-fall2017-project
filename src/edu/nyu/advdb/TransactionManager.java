@@ -515,10 +515,15 @@ public class TransactionManager {
             variableOnSite.setCanRead(false);
         }
         //abort transaction which has lock on this site.
-        for (Transaction t : s.getInvolvedTransactions()) {
+        System.out.println("number of involved transcation");
+
+        List<Transaction> transactionsToRemove = new ArrayList<>();
+        for(Transaction t: s.getInvolvedTransactions()) {
+            transactionsToRemove.add(t);
+        }
+        for (Transaction t : transactionsToRemove) {
             abort(t, " involved Site " + siteNumber + " is failed ");
         }
-
     }
 
     /**
